@@ -49,6 +49,9 @@ Dolly Forge 도 각 언어가 맡는 자리가 있습니다. 단, **스킨 규�
   머릿결 윤기 띠. 모두 `doll.makeup` 값으로 조절한다.
 - **의상**: 코트(가슴에서 열리고 벨트에서 닫힘, 골반에서 퍼지는 자락) · 후드티 · 메탈릭 미디 드레스 ·
   하이로우 웨딩드레스와 비치는 베일 · 마녀 룩(모자·다마스크 드레스·레이스 망토·장갑·지팡이). 색은 스킨과 **같은 팔레트**.
+- **포즈**: 레퍼런스처럼 오른팔을 들어 검지를 세운다. 팔 요소(소매·장갑·손가락·지팡이)는 휴식 자세로 정의하고,
+  들린 팔 근처의 점을 위팔·아래팔 회전의 역변환으로 휴식 공간에 되돌려 평가한다 (두 구간 중 가까운 쪽, 팔꿈치에서 연속).
+  메시 내보내기는 게임 애니메이션을 위해 기본 자세(팔 내림)로 뽑는다.
 - **질감**: 머리카락 가닥 홈 + Kajiya-Kay 띠 하이라이트, 피부 속 산란, 다섯 손가락, 금속의 환경 반사,
   레이스·자수·다마스크 무늬.
 - **머리**: 긴 생머리(제니) · 턱선 단발(에일 틸) · 어깨 웨이브(릴라 핀치), 가르마에서 쓸어 넘긴 앞머리, 꽃핀 위치.
@@ -57,6 +60,7 @@ Dolly Forge 도 각 언어가 맡는 자리가 있습니다. 단, **스킨 규�
 "doll": {
   "hair":   { "style": "long" },          // long | bob | wavy
   "flower": { "side": "right" },          // 캐릭터 기준
+  "pose":   "point",                      // point: 오른팔을 들어 검지를 세운 레퍼런스 포즈 | stand
   "outfit": { "type": "cyber" },          // cyber | casual | dressup | wedding | witch
   "figure": { "bust": 1, "waist": 1, "hips": 1, "thighs": 1 },   // 1 = 레퍼런스 실측 (바꾸지 않는다)
   "makeup": { "eye_size": 1, "eye_open": 0.66, "eye_tilt": 0.35, "lash": 1,
@@ -80,6 +84,17 @@ DollyForge/build/dolly-forge sculpt ... --zoom 4 --yaw 8      # 얼굴 클로즈
 
 메시는 SDF 를 격자로 샘플링해 Surface Nets 로 뽑고, 정점을 곡면 위로 한 번 끌어당긴 뒤, 메이크업·무늬가 들어간 표면색을
 256×256 팔레트 텍스처(R6·G6·B4)로 굽습니다. Figura 용은 바닐라 애니메이션을 따르도록 삼각형을 머리·몸·팔·다리 그룹으로 나눕니다.
+
+Figura 형식은 Figura 소스([FiguraMC/Figura](https://github.com/FiguraMC/Figura), `parsers/BlockbenchCommonTypes.java`,
+`model/ParentType.java`)와 [공식 문서](https://docs.figuramc.org/enums/ModelPartParentTypes)에 맞춰 확인했습니다.
+- `type: "mesh"` 요소의 `vertices` / `faces{vertices(3~4), uv, texture}` 를 읽고, 정점에 요소 `origin` 을 더한다 → origin `[0,0,0]` 명시
+- UV 는 텍스처 픽셀 단위에 `width / uv_width` 를 곱한다 → 둘 다 256
+- `relative_path` 가 없으면 `source` 의 `data:image/png;base64,` 를 읽는다 → 텍스처 내장
+- 그룹 이름 접두어(대소문자 구분)로 부모를 정한다: `Head` `Body` `RightArm` `LeftArm` `RightLeg` `LeftLeg`
+- 바닐라 기준점은 오른팔 (-5, 2, 0) · 오른다리 (-1.9, 12, 0) — 캐릭터 오른쪽이 -X, 얼굴은 North(-Z).
+  그래서 우리 좌표(앞 +Z)에서 z 만 뒤집고, 거울상이 되므로 삼각형 감김도 뒤집는다.
+
+게임 안 실행 확인은 이 환경에서 하지 못했습니다.
 
 ## 빌드
 

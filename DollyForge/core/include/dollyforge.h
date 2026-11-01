@@ -94,6 +94,7 @@ DF_API int df_diff(const df_skin *a, const df_skin *b, int diff[DF_PART_COUNT]);
 typedef struct df_doll df_doll;
 #define DF_RENDER_BACKGROUND 1   /* 스튜디오 배경 (없으면 투명) */
 #define DF_RENDER_HQ 2           /* 2x2 슈퍼샘플링 */
+#define DF_RENDER_TALL 4         /* 모자 높이까지 담는 고정 프레임 (여러 캐릭터를 같은 축척으로) */
 DF_API df_doll *df_doll_from_recipe(const char *recipe_path, char *err, size_t errlen);
 DF_API df_doll *df_doll_from_json(const char *json, size_t len, const char *base_dir, char *err, size_t errlen);
 DF_API void df_doll_free(df_doll *doll);

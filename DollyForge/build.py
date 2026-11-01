@@ -134,13 +134,17 @@ def main():
     shots = os.path.join(previews, "3D")
     os.makedirs(shots, exist_ok=True)
     tiles = []
+    export_tiles = os.path.join(BUILD, "lineup_tiles")
+    os.makedirs(export_tiles, exist_ok=True)
     for s, path in zip(col["skins"], skin_files):
         name = s["file"].replace("_Skin.png", "")
         full = os.path.join(shots, name + "_3D.png")
         face = os.path.join(shots, name + "_3D_Face.png")
         run(cli, "sculpt", recipe_path(s), "-o", full, "--size", "600x900", "--yaw", "16", "--hq")
+        tile = os.path.join(export_tiles, name + ".png")
+        run(cli, "sculpt", recipe_path(s), "-o", tile, "--size", "400x600", "--yaw", "16", "--hq", "--tall")
         run(cli, "sculpt", recipe_path(s), "-o", face, "--size", "600x600", "--yaw", "8", "--zoom", "4", "--hq")
-        tiles.append((full, load_json(recipe_path(s))["meta"]["title"]["en_US"]))
+        tiles.append((tile, load_json(recipe_path(s))["meta"]["title"]["en_US"]))
     lineup_3d(tiles, os.path.join(previews, "Lineup_3D.png"))
 
     step("C: 곡선 3D 메시 내보내기 (OBJ zip · Figura 아바타)")

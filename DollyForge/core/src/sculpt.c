@@ -136,6 +136,9 @@ struct df_doll {
     int veil_on;
     float top;               /* 캐릭터 맨 위 (모자 포함) — 카메라 화면 범위 */
     float shell;             /* 베일·망토 막 두께의 절반 */
+    int pose;                /* 1 = 오른팔을 들어 검지를 세운 레퍼런스 포즈 */
+    v3 pose_e, pose_w;       /* 들린 팔의 팔꿈치·손목 (대칭 좌표) */
+    float up_t[9], fore_t[9];/* 위팔·아래팔 회전의 역행렬 (휴식 자세로 되돌리기) */
     struct df_doll *noveil;  /* 베일만 뺀 사본: 반투명 베일 뒤를 그릴 때 쓴다 */
     int ntorso, nskirt;
     v3 flower_c, flower_n, flower_u, flower_v;
@@ -161,12 +164,58 @@ static float sd_head(v3 p) {
     return d;
 }
 
+static v3 mat_mul(const float m[9], v3 v) {
+    return V(m[0] * v.x + m[1] * v.y + m[2] * v.z, m[3] * v.x + m[4] * v.y + m[5] * v.z, m[6] * v.x + m[7] * v.y + m[8] * v.z);
+}
+
+/* a 를 b 로 돌리는 최소 회전 (로드리게스) */
+static void rot_between(v3 a, v3 b, float m[9]) {
+    v3 v = cross(a, b);
+    float c = dot(a, b), k = 1.0f / (1.0f + fmaxf(c, -0.9999f));
+    float vx = v.x, vy = v.y, vz = v.z;
+    float r[9] = { 1 - (vy * vy + vz * vz) * k, -vz + vx * vy * k, vy + vx * vz * k,
+                   vz + vx * vy * k, 1 - (vx * vx + vz * vz) * k, -vx + vy * vz * k,
+                   -vy + vx * vz * k, vx + vy * vz * k, 1 - (vx * vx + vy * vy) * k };
+    memcpy(m, r, sizeof r);
+}
+
+static void mat_mul3(const float a[9], const float b[9], float out[9]) {
+    float r[9];
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++) r[i * 3 + j] = a[i * 3] * b[j] + a[i * 3 + 1] * b[3 + j] + a[i * 3 + 2] * b[6 + j];
+    memcpy(out, r, sizeof r);
+}
+
+static void transpose3(const float a[9], float out[9]) {
+    float r[9] = { a[0], a[3], a[6], a[1], a[4], a[7], a[2], a[5], a[8] };
+    memcpy(out, r, sizeof r);
+}
+
+
+/* 들린 오른팔 근처의 점을 "내린 팔" 휴식 공간으로 되돌린다 — 소매·장갑·손가락·지팡이 같은
+ * 팔 요소는 그대로 둔 채 팔만 들어 올리는 방법. segment 0 = 위팔(어깨 회전), 1 = 아래팔(팔꿈치 회전).
+ * 각 구간은 휴식 공간에서 자기 쪽 절반에서만 유효하고, 밖이면 팔 요소가 닿지 않는 먼 곳을 돌려준다.
+ * 두 변환은 팔꿈치에서 정확히 만나므로 둘 중 가까운 결과를 고르면 이음매가 연속이다. */
+static v3 arm_space_seg(const struct df_doll *dl, v3 m, int segment) {
+    v3 r;
+    if (segment == 0) {
+        r = add(SHOULDER, mat_mul(dl->up_t, sub(m, SHOULDER)));
+        if (dot(sub(r, ELBOW), nrm(sub(ELBOW, SHOULDER))) > 0.025f) return add(m, V(0, -5.0f, 0));
+    } else {
+        r = add(ELBOW, mat_mul(dl->fore_t, sub(m, dl->pose_e)));
+        if (dot(sub(r, ELBOW), nrm(sub(WRIST, ELBOW))) < -0.025f) return add(m, V(0, -5.0f, 0));
+    }
+    return r;
+}
+
+static int posed_side(const struct df_doll *dl, v3 p) { return dl->pose && p.x < -0.10f; }
+
 static float sd_arm(v3 q) { /* q = 대칭 좌표 */
     float d = sd_round_cone(q, SHOULDER, ELBOW, 0.045f, 0.036f);
     return smin(d, sd_round_cone(q, ELBOW, WRIST, 0.036f, 0.027f), 0.02f);
 }
 
-static float sd_hand(v3 q) {
+static float sd_hand(v3 q, int point) {
     /* 손바닥 + 살짝 안으로 굽은 네 손가락 + 엄지 (손바닥은 몸 쪽을 향한다) */
     float d = sd_ellipsoid(sub(q, add(WRIST, V(0.004f, -0.042f, 0.008f))), V(0.017f, 0.036f, 0.030f));
     d = smin(d, sd_round_cone(q, WRIST, add(WRIST, V(0, -0.02f, 0.006f)), 0.026f, 0.024f), 0.015f);
@@ -174,6 +223,8 @@ static float sd_hand(v3 q) {
         float z = -0.017f + 0.0115f * (float)i, len = i == 0 ? 0.036f : i == 3 ? 0.040f : 0.046f;
         v3 a = add(WRIST, V(0.004f, -0.070f, 0.008f + z));
         v3 b = add(a, V(-0.010f, -len, 0.004f * (float)(i - 1)));
+        if (point && i < 3) b = add(a, V(-0.020f, -0.010f, 0.002f)); /* 접은 손가락 */
+        if (point && i == 3) b = add(a, V(-0.004f, -0.050f, 0.004f)); /* 곧게 편 검지 */
         d = smin(d, sd_round_cone(q, a, b, 0.0068f, 0.0056f), 0.008f);
     }
     d = smin(d, sd_round_cone(q, add(WRIST, V(-0.008f, -0.024f, 0.026f)), add(WRIST, V(-0.018f, -0.060f, 0.036f)), 0.0085f, 0.0065f), 0.01f);
@@ -285,7 +336,7 @@ static void walker_boots(v3 q, hit *h) {
     }
 }
 
-static void map_cyber(const struct df_doll *dl, v3 p, hit *h, float body, int body_m) {
+static void map_cyber(const struct df_doll *dl, v3 p, v3 qa, hit *h, float body, int body_m) {
     v3 q = mx(p);
     /* 몸통 코트 (가슴은 열림) */
     if (p.y > 0.98f && p.y < 1.33f) {
@@ -302,16 +353,16 @@ static void map_cyber(const struct df_doll *dl, v3 p, hit *h, float body, int bo
         take(h, sk, fabsf(p.x) < 0.004f && p.z > 0 ? M_EDGE : M_COAT);
     }
     /* 소매 + 소맷부리 + 위팔 스트랩 */
-    float sleeve = sd_round_cone(q, SHOULDER, ELBOW, 0.052f, 0.046f);
-    sleeve = smin(sleeve, sd_round_cone(q, ELBOW, add(WRIST, V(0, 0.03f, 0)), 0.046f, 0.044f), 0.02f);
+    float sleeve = sd_round_cone(qa, SHOULDER, ELBOW, 0.052f, 0.046f);
+    sleeve = smin(sleeve, sd_round_cone(qa, ELBOW, add(WRIST, V(0, 0.03f, 0)), 0.046f, 0.044f), 0.02f);
     v3 fa = nrm(sub(WRIST, ELBOW)), ua = nrm(sub(ELBOW, SHOULDER));
-    float cuff = sd_ring(q, add(WRIST, V(0, 0.055f, -0.002f)), fa, 0.047f, 0.012f);
-    float strap = sd_ring(q, mixv(SHOULDER, ELBOW, 0.55f), ua, 0.052f, 0.007f);
+    float cuff = sd_ring(qa, add(WRIST, V(0, 0.055f, -0.002f)), fa, 0.047f, 0.012f);
+    float strap = sd_ring(qa, mixv(SHOULDER, ELBOW, 0.55f), ua, 0.052f, 0.007f);
     take(h, smin(sleeve, body + 0.5f, 0.001f), M_COAT);
     take(h, cuff, M_EDGE);
     take(h, strap, M_BELT);
-    take(h, sd_round_box(sub(q, add(mixv(SHOULDER, ELBOW, 0.55f), V(0.054f, 0, 0))), V(0.004f, 0.012f, 0.012f), 0.002f), M_METAL);
-    take(h, sd_round_box(sub(q, add(WRIST, V(0.050f, 0.055f, 0))), V(0.004f, 0.011f, 0.011f), 0.002f), M_METAL);
+    take(h, sd_round_box(sub(qa, add(mixv(SHOULDER, ELBOW, 0.55f), V(0.054f, 0, 0))), V(0.004f, 0.012f, 0.012f), 0.002f), M_METAL);
+    take(h, sd_round_box(sub(qa, add(WRIST, V(0.050f, 0.055f, 0))), V(0.004f, 0.011f, 0.011f), 0.002f), M_METAL);
     /* 벨트 + 버클 + 매달린 지퍼 장식 */
     float belt = fmaxf(sd_loft(p, dl->torso, dl->ntorso, 0.024f), fabsf(p.y - 1.030f) - 0.020f);
     take(h, belt, M_BELT);
@@ -325,7 +376,7 @@ static void map_cyber(const struct df_doll *dl, v3 p, hit *h, float body, int bo
     (void)body_m;
 }
 
-static void map_casual(const struct df_doll *dl, v3 p, hit *h, float body) {
+static void map_casual(const struct df_doll *dl, v3 p, v3 qa, hit *h, float body) {
     v3 q = mx(p);
     /* 넉넉한 후드티: 몸통을 크게 감싸고 앞은 지퍼를 열어 이너가 보인다 */
     if (p.y > 0.80f && p.y < 1.33f) {
@@ -343,10 +394,10 @@ static void map_casual(const struct df_doll *dl, v3 p, hit *h, float body) {
     for (int side = -1; side <= 1; side += 2)
         take(h, sd_round_cone(p, V(side * 0.042f, 1.290f, 0.090f), V(side * 0.046f, 1.150f, 0.118f), 0.0045f, 0.004f), M_STRING);
     /* 오버핏 소매 + 리브 소맷부리 */
-    float sleeve = sd_round_cone(q, SHOULDER, ELBOW, 0.064f, 0.058f);
-    sleeve = smin(sleeve, sd_round_cone(q, ELBOW, add(WRIST, V(0, 0.035f, 0)), 0.058f, 0.050f), 0.03f);
+    float sleeve = sd_round_cone(qa, SHOULDER, ELBOW, 0.064f, 0.058f);
+    sleeve = smin(sleeve, sd_round_cone(qa, ELBOW, add(WRIST, V(0, 0.035f, 0)), 0.058f, 0.050f), 0.03f);
     take(h, sleeve, M_TOP);
-    take(h, sd_round_cone(q, add(WRIST, V(0, 0.040f, 0)), add(WRIST, V(0, 0.008f, 0)), 0.040f, 0.036f), M_EDGE);
+    take(h, sd_round_cone(qa, add(WRIST, V(0, 0.040f, 0)), add(WRIST, V(0, 0.008f, 0)), 0.040f, 0.036f), M_EDGE);
     /* 반바지 */
     if (p.y > 0.60f && p.y < 0.90f) {
         float sh = smin(sd_loft(p, dl->torso, dl->ntorso, 0.012f), sd_round_cone(q, HIP, mixv(HIP, KNEE, 0.42f), 0.100f, 0.090f), 0.03f);
@@ -371,7 +422,7 @@ static void ankle_boots(v3 q, hit *h) {
     take(h, smin(smin(shaft, foot, 0.03f), heel, 0.01f), q.y < 0.016f ? M_SOLE : M_BOOT);
 }
 
-static void map_dressup(const struct df_doll *dl, v3 p, hit *h) {
+static void map_dressup(const struct df_doll *dl, v3 p, v3 qa, hit *h) {
     v3 q = mx(p);
     /* 몸에 붙는 니트 미디 드레스: 가슴·허리·골반을 그대로 따라 종아리 중간에서 끝난다 */
     if (p.y > 0.29f && p.y < 1.33f) {
@@ -389,10 +440,10 @@ static void map_dressup(const struct df_doll *dl, v3 p, hit *h) {
         take(h, jk, M_COAT);
         take(h, fmaxf(sd_loft(p, dl->torso, dl->ntorso, 0.021f), fabsf(p.y - 1.040f) - 0.006f), M_EDGE);
     }
-    float sleeve = sd_round_cone(q, SHOULDER, ELBOW, 0.050f, 0.044f);
-    sleeve = smin(sleeve, sd_round_cone(q, ELBOW, add(WRIST, V(0, 0.02f, 0)), 0.044f, 0.036f), 0.02f);
+    float sleeve = sd_round_cone(qa, SHOULDER, ELBOW, 0.050f, 0.044f);
+    sleeve = smin(sleeve, sd_round_cone(qa, ELBOW, add(WRIST, V(0, 0.02f, 0)), 0.044f, 0.036f), 0.02f);
     take(h, sleeve, M_COAT);
-    take(h, sd_ring(q, add(WRIST, V(0, 0.022f, 0)), nrm(sub(WRIST, ELBOW)), 0.036f, 0.007f), M_EDGE);
+    take(h, sd_ring(qa, add(WRIST, V(0, 0.022f, 0)), nrm(sub(WRIST, ELBOW)), 0.036f, 0.007f), M_EDGE);
     ankle_boots(q, h);
     /* 보라 클러치 (캐릭터 왼손) + 은색 잠금쇠 */
     v3 bag = sub(p, V(WRIST.x + 0.040f, 0.745f, 0.030f));
@@ -400,7 +451,7 @@ static void map_dressup(const struct df_doll *dl, v3 p, hit *h) {
     take(h, sd_round_box(sub(bag, V(0.013f, 0.030f, 0)), V(0.003f, 0.006f, 0.016f), 0.002f), M_METAL);
 }
 
-static void map_wedding(const struct df_doll *dl, v3 p, hit *h) {
+static void map_wedding(const struct df_doll *dl, v3 p, v3 qa, hit *h) {
     v3 q = mx(p);
     /* 보디스: 몸의 곡선을 그대로 따른다 */
     if (p.y > 0.98f && p.y < 1.33f) {
@@ -420,10 +471,10 @@ static void map_wedding(const struct df_doll *dl, v3 p, hit *h) {
         take(h, sk, p.y < hem + 0.022f ? M_EDGE : M_TOP);
     }
     ankle_boots(q, h);
-    float sleeve = sd_round_cone(q, SHOULDER, ELBOW, 0.048f, 0.042f);
-    sleeve = smin(sleeve, sd_round_cone(q, ELBOW, add(WRIST, V(0, 0.015f, 0)), 0.042f, 0.038f), 0.02f);
+    float sleeve = sd_round_cone(qa, SHOULDER, ELBOW, 0.048f, 0.042f);
+    sleeve = smin(sleeve, sd_round_cone(qa, ELBOW, add(WRIST, V(0, 0.015f, 0)), 0.042f, 0.038f), 0.02f);
     take(h, sleeve, M_TOP);
-    take(h, sd_ring(q, add(WRIST, V(0, 0.018f, 0)), nrm(sub(WRIST, ELBOW)), 0.038f, 0.007f), M_EDGE);
+    take(h, sd_ring(qa, add(WRIST, V(0, 0.018f, 0)), nrm(sub(WRIST, ELBOW)), 0.038f, 0.007f), M_EDGE);
     /* 베일: 머리 뒤에서 등으로 흘러내리는 얇은 막 */
     if (dl->veil_on && p.z < 0.06f && p.y > 1.00f) {
         float shell = fabsf(sd_ellipsoid(sub(p, V(0, 1.300f, -0.070f)), V(0.175f, 0.320f, 0.150f))) - dl->shell;
@@ -437,7 +488,7 @@ static void map_wedding(const struct df_doll *dl, v3 p, hit *h) {
 }
 
 /* 마녀 룩 (JennyLovesWitchCraft.png) */
-static void map_witch(const struct df_doll *dl, v3 p, hit *h) {
+static void map_witch(const struct df_doll *dl, v3 p, v3 qa, hit *h) {
     v3 q = mx(p);
     /* 하트 모양 네크라인의 보디스 + 골반에서 퍼지는 짧은 치마 */
     if (p.y > 0.76f && p.y < 1.24f) {
@@ -476,15 +527,17 @@ static void map_witch(const struct df_doll *dl, v3 p, hit *h) {
     }
     /* 지팡이: 오른손(캐릭터 기준)에서 앞으로 기울어진 은 지팡이 + 보라 수정 */
     {
-        v3 a = add(V(-WRIST.x, WRIST.y, WRIST.z), V(-0.004f, -0.075f, 0.030f)), b = V(-0.305f, 0.420f, 0.230f);
-        take(h, sd_round_cone(p, a, b, 0.0065f, 0.0045f), M_WAND);
-        take(h, sd_ellipsoid(sub(p, add(b, V(-0.006f, -0.018f, 0.012f))), V(0.010f, 0.022f, 0.010f)), M_PETAL);
-        take(h, sd_ring(p, mixv(a, b, 0.25f), nrm(sub(b, a)), 0.009f, 0.003f), M_METAL);
+        if (p.x < 0) {
+            v3 a = add(WRIST, V(0.004f, -0.075f, 0.030f)), b = V(0.305f, 0.420f, 0.230f);
+            take(h, sd_round_cone(qa, a, b, 0.0065f, 0.0045f), M_WAND);
+            take(h, sd_ellipsoid(sub(qa, add(b, V(0.006f, -0.018f, 0.012f))), V(0.010f, 0.022f, 0.010f)), M_PETAL);
+            take(h, sd_ring(qa, mixv(a, b, 0.25f), nrm(sub(b, a)), 0.009f, 0.003f), M_METAL);
+        }
     }
 }
 
-/* 전체 장면: 거리 + 재질 */
-static hit map(const struct df_doll *dl, v3 p) {
+/* 전체 장면: 거리 + 재질. qa = 팔 요소를 평가할 (대칭) 좌표 */
+static hit map_core(const struct df_doll *dl, v3 p, v3 qa) {
     hit h = { 10.0f, M_SKIN };
     v3 q = mx(p);
     /* 바운딩 구로 먼 부위는 건너뛴다 */
@@ -493,8 +546,9 @@ static hit map(const struct df_doll *dl, v3 p) {
     float dt = sd_loft(p, dl->torso, dl->ntorso, 0);
     float dsh = sd_ellipsoid(sub(q, V(0.150f, 1.212f, -0.006f)), V(0.060f, 0.058f, 0.060f));
     float dn = sd_round_cone(p, V(0, 1.270f, -0.004f), V(0, 1.360f, 0.004f), 0.046f, 0.043f);
-    float da = q.y > 0.68f && q.y < 1.30f ? sd_arm(q) : 10.0f;
-    float dhd = q.y > 0.66f && q.y < 0.86f ? sd_hand(q) : 10.0f;
+    int pointing = dl->pose && p.x < 0;
+    float da = qa.y > 0.68f && qa.y < 1.30f ? sd_arm(qa) : 10.0f;
+    float dhd = qa.y > 0.66f && qa.y < 0.86f ? sd_hand(qa, pointing) : 10.0f;
     float dl_ = q.y < 0.86f ? sd_leg(dl, q) : 10.0f;
     float dhe = bound_head < 0.05f ? sd_head(p) : bound_head;
     float body = smin(dt, dsh, 0.05f);
@@ -513,18 +567,18 @@ static hit map(const struct df_doll *dl, v3 p) {
     if (bm == M_TOP && p.y > 1.335f) bm = M_SKIN;
     if (dl->outfit == OUTFIT_WITCH) {
         if (bm == M_TOP && p.y > 1.20f) bm = M_SKIN;
-        if (da <= best && bm != M_LEGS && bm != M_SKIN) bm = q.y < ELBOW.y + 0.03f ? M_GLOVE : M_SKIN;
-        if (da < dt && da < dsh && q.y < ELBOW.y + 0.03f) bm = M_GLOVE;
+        if (da <= best && bm != M_LEGS && bm != M_SKIN) bm = qa.y < ELBOW.y + 0.03f ? M_GLOVE : M_SKIN;
+        if (da < dt && da < dsh && qa.y < ELBOW.y + 0.03f) bm = M_GLOVE;
         else if (da < dt && da < dsh) bm = M_SKIN;
     }
     take(&h, body, bm);
 
     switch (dl->outfit) {
-    case OUTFIT_CYBER: map_cyber(dl, p, &h, body, bm); break;
-    case OUTFIT_CASUAL: map_casual(dl, p, &h, body); break;
-    case OUTFIT_DRESSUP: map_dressup(dl, p, &h); break;
-    case OUTFIT_WEDDING: map_wedding(dl, p, &h); break;
-    default: map_witch(dl, p, &h); break;
+    case OUTFIT_CYBER: map_cyber(dl, p, qa, &h, body, bm); break;
+    case OUTFIT_CASUAL: map_casual(dl, p, qa, &h, body); break;
+    case OUTFIT_DRESSUP: map_dressup(dl, p, qa, &h); break;
+    case OUTFIT_WEDDING: map_wedding(dl, p, qa, &h); break;
+    default: map_witch(dl, p, qa, &h); break;
     }
 
     if (bound_head < h.d + 0.02f) {
@@ -533,6 +587,14 @@ static hit map(const struct df_doll *dl, v3 p) {
         take(&h, hair, fm >= 0 ? fm : M_HAIR);
     }
     return h;
+}
+
+static hit map(const struct df_doll *dl, v3 p) {
+    if (!posed_side(dl, p)) return map_core(dl, p, mx(p));
+    v3 m = mx(p);
+    hit a = map_core(dl, p, arm_space_seg(dl, m, 0));
+    hit b = map_core(dl, p, arm_space_seg(dl, m, 1));
+    return a.d <= b.d ? a : b;
 }
 
 static inline float mapd(const struct df_doll *dl, v3 p) { return map(dl, p).d; }
@@ -902,8 +964,9 @@ int df_doll_render(const df_doll *dl, int w, int h, double yaw_deg, double pitch
     if (!dl || w <= 0 || h <= 0 || w > 8192 || h > 8192) return 0;
     float yaw = (float)yaw_deg * 0.0174533f, pitch = (float)pitch_deg * 0.0174533f;
     float z = (float)(zoom < 1 ? 1 : zoom > 8 ? 8 : zoom);
-    float half = dl->top * 0.5f + 0.10f;
-    v3 target = V(0, mixf(dl->top * 0.5f, 1.42f, clampf((z - 1) / 2.5f, 0, 1)), 0);
+    float top = flags & DF_RENDER_TALL ? fmaxf(dl->top, 1.95f) : dl->top; /* 라인업: 모두 같은 축척 */
+    float half = top * 0.5f + 0.10f;
+    v3 target = V(0, mixf(top * 0.5f, 1.42f, clampf((z - 1) / 2.5f, 0, 1)), 0);
     float dist = 4.2f;
     v3 cam = add(target, V(-sinf(yaw) * cosf(pitch) * dist, sinf(pitch) * dist, cosf(yaw) * cosf(pitch) * dist));
     render_job base;
@@ -965,6 +1028,20 @@ static df_doll *doll_from_recipe(df_recipe *r, char *err, size_t errlen) {
     const char *hair = str(r, "hair", "style", "long");
     dl->hair = !strcmp(hair, "bob") ? HAIR_BOB : !strcmp(hair, "wavy") ? HAIR_WAVY : HAIR_LONG;
     dl->flower_side = !strcmp(str(r, "flower", "side", "right"), "left") ? 1.0f : -1.0f;
+    {
+        const df_json *pv = df__recipe_doll(r, "pose", NULL);
+        const char *ps = df_json_str(pv);
+        dl->pose = ps && !strcmp(ps, "point");
+        /* 레퍼런스 포즈: 오른팔을 옆으로 들어 팔꿈치를 굽히고, 검지를 세운 손을 얼굴 높이로 */
+        dl->pose_e = V(0.292f, 1.070f, 0.035f);
+        dl->pose_w = V(0.305f, 1.262f, 0.080f);
+        float r1[9], r2[9], rf[9];
+        rot_between(nrm(sub(ELBOW, SHOULDER)), nrm(sub(dl->pose_e, SHOULDER)), r1);
+        rot_between(mat_mul(r1, nrm(sub(WRIST, ELBOW))), nrm(sub(dl->pose_w, dl->pose_e)), r2);
+        mat_mul3(r2, r1, rf);
+        transpose3(r1, dl->up_t);
+        transpose3(rf, dl->fore_t);
+    }
 
     dl->bust = num(r, "figure", "bust", 1); dl->waist = num(r, "figure", "waist", 1);
     dl->hips = num(r, "figure", "hips", 1); dl->thighs = num(r, "figure", "thighs", 1);
@@ -1199,6 +1276,7 @@ static void *sample_rows(void *arg) {
 static int build_mesh(const struct df_doll *src, float cell, mesh *out) {
     struct df_doll dl = *src;
     dl.shell = fmaxf(src->shell, cell * 0.75f);
+    dl.pose = 0; /* 게임 애니메이션이 팔을 움직이므로 기본 자세로 뽑는다 */
     dl.noveil = NULL;
     float ox = -0.42f, oy = -0.012f, oz = -0.36f;
     int nx = (int)ceilf(0.84f / cell) + 2, ny = (int)ceilf((dl.top + 0.06f) / cell) + 2, nz = (int)ceilf(0.72f / cell) + 2;
@@ -1414,8 +1492,10 @@ int df_doll_export_figura(const df_doll *dl, const char *dir, const char *name, 
     const v3 pivot[G_COUNT] = { V(0, 1.30f, 0), V(0, 1.30f, 0), V(-SHOULDER.x, SHOULDER.y, 0), V(SHOULDER.x, SHOULDER.y, 0),
                                 V(-HIP.x, 0.78f, 0), V(HIP.x, 0.78f, 0) };
     const float S = 32.0f / 1.60f; /* 키 1.6m → 바닐라 플레이어 32 픽셀 */
-    /* Blockbench 좌표: 앞이 -Z 가 되도록 y 축으로 180° 회전 (좌우 반전 없음) */
-#define BX(v) (-(v).x * S)
+    /* Blockbench/바닐라 플레이어 규약: 얼굴은 North(-Z), 캐릭터 오른팔은 -X (Steve 템플릿의 RightArm 피벗 [-5,22,0],
+     * Figura ParentType.RightArm 오프셋 (-5,2,0) 과 같은 방향). 우리 좌표(앞 +Z, 오른쪽 -X)에서 z 만 뒤집으므로
+     * 거울상이 되어, 법선이 바깥을 향하도록 삼각형 감김 순서도 뒤집는다. */
+#define BX(v) ((v).x * S)
 #define BY(v) ((v).y * S)
 #define BZ(v) (-(v).z * S)
     size_t dlen = strlen(dir);
@@ -1463,7 +1543,7 @@ int df_doll_export_figura(const df_doll *dl, const char *dir, const char *name, 
             face_color(&m, t, col);
             int pi = palette_index(col);
             float u = (float)(pi % 256) + 0.5f, v = (float)(pi / 256) + 0.5f;
-            int a = local[tr[0]], b = local[tr[1]], cc = local[tr[2]];
+            int a = local[tr[0]], b = local[tr[2]], cc = local[tr[1]]; /* 감김 반전 (z 거울상) */
             fprintf(f, "%s\"f%d\":{\"uv\":{\"v%d\":[%.1f,%.1f],\"v%d\":[%.1f,%.1f],\"v%d\":[%.1f,%.1f]},\"vertices\":[\"v%d\",\"v%d\",\"v%d\"],\"texture\":0}",
                     firstf ? "" : ",", fi++, a, u, v, b, u, v, cc, u, v, a, b, cc);
             firstf = 0;

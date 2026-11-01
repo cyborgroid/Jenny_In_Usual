@@ -20,7 +20,7 @@ const char *kUsage =
     "  dolly-forge preview <skin.png> -o <png> [--scale N]\n"
     "  dolly-forge pack-bedrock <pack.json> -o <out.mcpack>\n"
     "  dolly-forge export-3d <recipe.dolly.json> [--obj out.obj] [--figura dir] [--cell M] [--name NAME]\n"
-    "  dolly-forge sculpt <recipe.dolly.json> -o <render.png> [--size WxH] [--yaw DEG] [--pitch DEG] [--zoom Z] [--hq] [--transparent]\n";
+    "  dolly-forge sculpt <recipe.dolly.json> -o <render.png> [--size WxH] [--yaw DEG] [--pitch DEG] [--zoom Z] [--hq] [--tall] [--transparent]\n";
 
 void usage() {
     std::fprintf(stderr, kUsage, df_version());
@@ -56,7 +56,7 @@ struct Args {
     int scale = 8;
     int width = 600, height = 900;
     double yaw = 22, pitch = 6, zoom = 1;
-    bool hq = false, transparent = false;
+    bool hq = false, transparent = false, tall = false;
     std::string obj, figura, name;
     double cell = 0;
 };
@@ -79,6 +79,7 @@ Args parse(int argc, char **argv, int from) {
         else if (s == "--pitch") a.pitch = std::stod(need("--pitch"));
         else if (s == "--zoom") a.zoom = std::stod(need("--zoom"));
         else if (s == "--hq") a.hq = true;
+        else if (s == "--tall") a.tall = true;
         else if (s == "--obj") a.obj = need("--obj");
         else if (s == "--figura") a.figura = need("--figura");
         else if (s == "--name") a.name = need("--name");
@@ -184,7 +185,7 @@ int main(int argc, char **argv) {
             df_doll *doll = df_doll_from_recipe(a.pos[0].c_str(), err, sizeof err);
             if (!doll) throw std::runtime_error(err);
             std::vector<uint8_t> px(static_cast<size_t>(a.width) * a.height * 4);
-            int flags = (a.hq ? DF_RENDER_HQ : 0) | (a.transparent ? 0 : DF_RENDER_BACKGROUND);
+            int flags = (a.hq ? DF_RENDER_HQ : 0) | (a.transparent ? 0 : DF_RENDER_BACKGROUND) | (a.tall ? DF_RENDER_TALL : 0);
             df_doll_render(doll, a.width, a.height, a.yaw, a.pitch, a.zoom, flags, px.data());
             df_doll_free(doll);
             dolly::write_bytes(a.out, dolly::encode_png(px.data(), a.width, a.height));
