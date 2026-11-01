@@ -101,6 +101,12 @@ DF_API void df_doll_free(df_doll *doll);
  * zoom: 1 = 전신, 3.5 = 얼굴 클로즈업. rgba = w*h*4 */
 DF_API int df_doll_render(const df_doll *doll, int w, int h, double yaw_deg, double pitch_deg, double zoom, int flags, uint8_t *rgba);
 
+/* 곡선 3D 를 삼각형 메시로 (cell: 격자 크기 m, 작을수록 촘촘).
+ * OBJ: obj_path 옆에 같은 이름의 .mtl 과 .png(256x256 팔레트 텍스처)도 쓴다 — Blender · Blockbench 용.
+ * Figura: dir 안에 avatar.json + model.bbmodel(머리·몸·팔·다리 그룹) + script.lua — Java Edition 의 Figura 모드용. */
+DF_API int df_doll_export_obj(const df_doll *doll, const char *obj_path, double cell_m, char *err, size_t errlen);
+DF_API int df_doll_export_figura(const df_doll *doll, const char *dir, const char *name, double cell_m, char *err, size_t errlen);
+
 /* ---- 유틸 ---- */
 DF_API uint32_t df_crc32(const uint8_t *data, size_t len, uint32_t crc);
 DF_API int df_png_encode(const uint8_t *rgba, int w, int h, uint8_t **out, size_t *outlen);

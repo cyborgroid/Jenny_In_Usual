@@ -64,6 +64,20 @@ def lineup_3d(tiles, out):
     print("  3D lineup ->", os.path.relpath(out, REPO))
 
 
+def zip_dir(folders, out):
+    """같은 입력이면 같은 zip (날짜 고정) — git 기록이 불필요하게 바뀌지 않게"""
+    import zipfile
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+        for folder in folders:
+            for f in sorted(os.listdir(folder)):
+                info = zipfile.ZipInfo(os.path.basename(folder) + "/" + f, date_time=(1980, 1, 1, 0, 0, 0))
+                info.compress_type = zipfile.ZIP_DEFLATED
+                with open(os.path.join(folder, f), "rb") as src:
+                    z.writestr(info, src.read())
+    print("  zip ->", os.path.relpath(out, REPO), "(%.1f MB)" % (os.path.getsize(out) / 1e6))
+
+
 def recipe_path(entry):
     """collection.json 의 recipe 는 collection.json 이 있는 폴더 기준 상대 경로"""
     return os.path.normpath(os.path.join(os.path.dirname(COLLECTION), entry["recipe"]))
@@ -128,6 +142,19 @@ def main():
         run(cli, "sculpt", recipe_path(s), "-o", face, "--size", "600x600", "--yaw", "8", "--zoom", "4", "--hq")
         tiles.append((full, load_json(recipe_path(s))["meta"]["title"]["en_US"]))
     lineup_3d(tiles, os.path.join(previews, "Lineup_3D.png"))
+
+    step("C: 곡선 3D 메시 내보내기 (OBJ zip · Figura 아바타)")
+    export = os.path.join(BUILD, "export")
+    figura = os.path.join(DIST, "figura")
+    objs = []
+    for s in col["skins"]:
+        name = s["file"].replace("_Skin.png", "")
+        title = load_json(recipe_path(s))["meta"]["title"]["en_US"]
+        obj = os.path.join(export, name, name + ".obj")
+        os.makedirs(os.path.dirname(obj), exist_ok=True)
+        run(cli, "export-3d", recipe_path(s), "--obj", obj, "--figura", os.path.join(figura, name), "--name", title)
+        objs.append(os.path.dirname(obj))
+    zip_dir(objs, os.path.join(DIST, "3d", "JennyInUsual_OBJ.zip"))
 
     step("C++: Bedrock 스킨팩 (05_Distribution/bedrock)")
     bedrock = os.path.join(DIST, "bedrock")

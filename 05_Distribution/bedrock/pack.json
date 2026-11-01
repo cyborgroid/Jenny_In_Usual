@@ -8,7 +8,7 @@
   "description": "Project Haven — Jenny, Eyle Teal, Lila Finch. All-ages skins, CC BY-NC-ND 4.0",
   "version": [
     1,
-    1,
+    2,
     0
   ],
   "header_uuid": "c48b4e73-82ee-4c0e-9af9-d4374944345f",
@@ -44,6 +44,14 @@
       "name": {
         "en_US": "Jenny (Wedding Day)",
         "ko_KR": "제니 (웨딩 데이)"
+      }
+    },
+    {
+      "id": "jenny_witch",
+      "texture": "../../03_Sources/Minecraft_Skins/Jenny_Witch_Skin.png",
+      "name": {
+        "en_US": "Jenny (Little Witch)",
+        "ko_KR": "제니 (리틀 위치)"
       }
     },
     {

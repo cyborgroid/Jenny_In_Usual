@@ -52,6 +52,8 @@ _lib.df_doll_from_json.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_ch
 _lib.df_doll_free.argtypes = [_p]
 _lib.df_doll_render.argtypes = [_p, ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_double,
                                 ctypes.c_int, ctypes.POINTER(ctypes.c_uint8)]
+_lib.df_doll_export_obj.argtypes = [_p, ctypes.c_char_p, ctypes.c_double, ctypes.c_char_p, ctypes.c_size_t]
+_lib.df_doll_export_figura.argtypes = [_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_double, ctypes.c_char_p, ctypes.c_size_t]
 RENDER_BACKGROUND, RENDER_HQ = 1, 2
 
 version = _lib.df_version().decode()
@@ -146,6 +148,24 @@ class Doll:
         flags = (RENDER_BACKGROUND if background else 0) | (RENDER_HQ if hq else 0)
         _lib.df_doll_render(self._h, width, height, yaw, pitch, zoom, flags, out)
         return bytes(out)
+
+
+def _export_check(ok, err):
+    if not ok:
+        raise DollyForgeError(err.value.decode("utf-8", "replace"))
+
+
+def export_obj(d, path, cell=0.010):
+    """곡선 3D → OBJ + MTL + 팔레트 PNG"""
+    err = ctypes.create_string_buffer(256)
+    _export_check(_lib.df_doll_export_obj(d._h, os.fsencode(path), cell, err, len(err)), err)
+
+
+def export_figura(d, folder, name, cell=0.028):
+    """곡선 3D → Figura 아바타 폴더 (avatar.json, model.bbmodel, script.lua)"""
+    os.makedirs(folder, exist_ok=True)
+    err = ctypes.create_string_buffer(256)
+    _export_check(_lib.df_doll_export_figura(d._h, os.fsencode(folder), name.encode("utf-8"), cell, err, len(err)), err)
 
 
 def doll(recipe_path):

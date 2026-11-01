@@ -3,7 +3,7 @@
   "id": "JennyInUsual",
   "name": { "en_US": "Jenny In Usual", "ko_KR": "제니의 평범한 하루" },
   "description": "Project Haven — Jenny, Eyle Teal, Lila Finch. All-ages skins, CC BY-NC-ND 4.0",
-  "version": [1, 1, 0],
+  "version": [1, 2, 0],
   "header_uuid": "c48b4e73-82ee-4c0e-9af9-d4374944345f",
   "module_uuid": "5229171e-17b6-4dc2-8296-61d12e275c0e",
   "skins": [
@@ -11,6 +11,7 @@
     { "recipe": "jenny_casual.dolly.json",                   "file": "Jenny_Casual_Skin.png" },
     { "recipe": "jenny_dressup.dolly.json",                  "file": "Jenny_DressUp_Skin.png" },
     { "recipe": "jenny_wedding.dolly.json",                  "file": "Jenny_Wedding_Skin.png" },
+    { "recipe": "jenny_witch.dolly.json",                    "file": "Jenny_Witch_Skin.png" },
     { "recipe": "../eyle_teal/eyle_teal_cyber.dolly.json",   "file": "Eyle_Teal_Cyber_Skin.png" },
     { "recipe": "../eyle_teal/eyle_teal_casual.dolly.json",  "file": "Eyle_Teal_Casual_Skin.png" },
     { "recipe": "../lila_finch/lila_finch_cyber.dolly.json", "file": "Lila_Finch_Cyber_Skin.png" },

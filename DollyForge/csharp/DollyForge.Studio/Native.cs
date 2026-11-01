@@ -40,6 +40,7 @@ internal static partial class Native
     [DllImport(Lib)] public static extern void df_render_flat(IntPtr skin, int view, byte[] out16x32);
     [DllImport(Lib)] public static extern IntPtr df_doll_from_json(byte[] json, nuint len, byte[] baseDir, byte[] err, nuint errlen);
     [DllImport(Lib)] public static extern void df_doll_free(IntPtr doll);
+    [DllImport(Lib)] public static extern int df_doll_export_obj(IntPtr doll, byte[] path, double cell, byte[] err, nuint errlen);
     [DllImport(Lib)] public static extern int df_doll_render(IntPtr doll, int w, int h, double yaw, double pitch, double zoom, int flags, byte[] rgba);
 
     public static byte[] Z(string s) => Encoding.UTF8.GetBytes(s + "\0");
@@ -50,6 +51,21 @@ internal static partial class Native
 internal static class Doll
 {
     public const int Background = 1, HighQuality = 2;
+
+    /// <summary>곡선 3D 를 OBJ(+MTL+팔레트 PNG)로</summary>
+    public static void ExportObj(string json, string baseDir, string path, double cell)
+    {
+        var data = Encoding.UTF8.GetBytes(json);
+        var err = new byte[512];
+        var d = Native.df_doll_from_json(data, (nuint)data.Length, Native.Z(baseDir), err, (nuint)err.Length);
+        if (d == IntPtr.Zero) throw new InvalidOperationException(Native.FromZ(err));
+        try
+        {
+            if (Native.df_doll_export_obj(d, Native.Z(path), cell, err, (nuint)err.Length) == 0)
+                throw new IOException(Native.FromZ(err));
+        }
+        finally { Native.df_doll_free(d); }
+    }
 
     public static byte[] Render(string json, string baseDir, int w, int h, double yaw, double pitch, double zoom, int flags)
     {

@@ -20,6 +20,7 @@
 | 아늑한 후드티 | `03_Sources/3D_Models/JennyInUsual.jpg` | 보라 집업 후드티, 검은 이너, 회색 라운지 반바지, 흰 양말 | `Jenny_Casual_Skin.png` |
 | 실버 드레스업 | `03_Sources/3D_Models/JennyDressUp.png` | 실버 크롭 재킷, 회색 니트 미디 드레스, 보라 클러치, 실버 앵클부츠 | `Jenny_DressUp_Skin.png` |
 | 웨딩 데이 | `03_Sources/3D_Models/JennyMarriage.png` | 라벤더 자수 웨딩드레스, 베일, 실버 부츠 | `Jenny_Wedding_Skin.png` |
+| 리틀 위치 | `03_Sources/3D_Models/JennyLovesWitchCraft.png` | 보라 마녀 모자(꽃핀), 은빛 다마스크 드레스, 코르셋 벨트, 초커, 비치는 레이스 망토, 긴 장갑, 워커 부츠, 지팡이 | `Jenny_Witch_Skin.png` |
 
 ### 제니의 두 친구
 

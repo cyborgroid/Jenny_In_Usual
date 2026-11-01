@@ -48,14 +48,16 @@ Dolly Forge 도 각 언어가 맡는 자리가 있습니다. 단, **스킨 규�
   위는 진하고 아래는 밝은 홍채 + 큰 하이라이트, 쌍꺼풀 선, 바깥으로 가늘어지는 눈썹 아치, 볼 홍조, 미소 곡선,
   머릿결 윤기 띠. 모두 `doll.makeup` 값으로 조절한다.
 - **의상**: 코트(가슴에서 열리고 벨트에서 닫힘, 골반에서 퍼지는 자락) · 후드티 · 메탈릭 미디 드레스 ·
-  하이로우 웨딩드레스와 비치는 베일. 색은 스킨과 **같은 팔레트**.
+  하이로우 웨딩드레스와 비치는 베일 · 마녀 룩(모자·다마스크 드레스·레이스 망토·장갑·지팡이). 색은 스킨과 **같은 팔레트**.
+- **질감**: 머리카락 가닥 홈 + Kajiya-Kay 띠 하이라이트, 피부 속 산란, 다섯 손가락, 금속의 환경 반사,
+  레이스·자수·다마스크 무늬.
 - **머리**: 긴 생머리(제니) · 턱선 단발(에일 틸) · 어깨 웨이브(릴라 핀치), 가르마에서 쓸어 넘긴 앞머리, 꽃핀 위치.
 
 ```jsonc
 "doll": {
   "hair":   { "style": "long" },          // long | bob | wavy
   "flower": { "side": "right" },          // 캐릭터 기준
-  "outfit": { "type": "cyber" },          // cyber | casual | dressup | wedding
+  "outfit": { "type": "cyber" },          // cyber | casual | dressup | wedding | witch
   "figure": { "bust": 1, "waist": 1, "hips": 1, "thighs": 1 },   // 1 = 레퍼런스 실측 (바꾸지 않는다)
   "makeup": { "eye_size": 1, "eye_open": 0.66, "eye_tilt": 0.35, "lash": 1,
               "brow_arch": 1, "blush": 0.75, "lip_curve": 1, "gloss": 1 }
@@ -67,9 +69,17 @@ DollyForge/build/dolly-forge sculpt DollyForge/characters/jenny/jenny_cyber.doll
 DollyForge/build/dolly-forge sculpt ... --zoom 4 --yaw 8      # 얼굴 클로즈업
 ```
 
-마인크래프트 바닐라 스킨은 박스 모델이라 곡면을 담을 수 없습니다. 그래서 같은 레시피가 **곡선 3D(설계·홍보·모드용)** 와
-**64×64 스킨(바닐라 게임용)** 을 함께 만듭니다. 곡선 모델을 게임 안에 그대로 넣으려면 모드(예: 커스텀 모델을 지원하는
-Java Edition 모드)가 필요합니다.
+마인크래프트 바닐라 스킨은 박스 모델이라 곡면을 담을 수 없습니다. 그래서 같은 레시피가 세 가지를 함께 만듭니다.
+
+| 결과 | 명령 | 용도 |
+|---|---|---|
+| 곡선 3D 렌더 | `dolly-forge sculpt` | 설계·홍보 이미지 |
+| 곡선 3D 메시 (OBJ + MTL + 팔레트 PNG) | `dolly-forge export-3d --obj` | Blender · Blockbench |
+| Figura 아바타 (`.bbmodel` 메시 + `script.lua`) | `dolly-forge export-3d --figura` | 게임 안 곡선 모델 (Java Edition + Figura 모드) |
+| 64×64 스킨 | `dolly-forge forge` | 바닐라 게임 |
+
+메시는 SDF 를 격자로 샘플링해 Surface Nets 로 뽑고, 정점을 곡면 위로 한 번 끌어당긴 뒤, 메이크업·무늬가 들어간 표면색을
+256×256 팔레트 텍스처(R6·G6·B4)로 굽습니다. Figura 용은 바닐라 애니메이션을 따르도록 삼각형을 머리·몸·팔·다리 그룹으로 나눕니다.
 
 ## 빌드
 

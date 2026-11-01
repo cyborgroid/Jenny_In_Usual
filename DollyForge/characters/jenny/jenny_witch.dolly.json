@@ -1,0 +1,96 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "jenny_witch",
+    "character": "Jenny",
+    "title": { "en_US": "Jenny (Little Witch)", "ko_KR": "제니 (리틀 위치)" },
+    "outfit": "보라 마녀 모자(꽃핀) + 은빛 다마스크 드레스 + 코르셋 벨트 + 초커 + 레이스 망토 + 긴 장갑 + 타이츠 + 워커 부츠 + 지팡이",
+    "reference": "03_Sources/3D_Models/JennyLovesWitchCraft.png",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": "jenny_base.dolly.json",
+  "palette": {
+    "hat": "#4B2A6B",
+    "hat_band": "#241B2C",
+    "dress": "#2E1D3D",
+    "dress_pattern": "#B9A6CC",
+    "corset": "#1A1620",
+    "buckle": "#C4C0CC",
+    "cape": "#DCD6E2",
+    "gloves": "#1C1820",
+    "tights": "#3D2A2B",
+    "tights_sheen": "tights*1.32",
+    "tights_shadow": "tights*0.78",
+    "boots": "#1B191F",
+    "boot_trim": "#7442AE",
+    "boot_sole": "#121015",
+    "wand": "#C9C6D2"
+  },
+  "legend": {
+    "A": "hat", "a": "hat_band", "D": "dress", "d": "dress_pattern", "C": "corset", "X": "buckle",
+    "V": "cape", "G": "gloves", "N": "tights", "n": "tights_sheen", "k": "tights_shadow",
+    "O": "boots", "o": "boot_trim", "Z": "boot_sole"
+  },
+  "doll": {
+    "outfit": { "type": "witch" }
+  },
+  "ops": [
+    { "op": "note", "text": "---- 마녀 모자: 머리 overlay 위쪽을 모자로, 밴드에 꽃핀 ----" },
+    { "op": "fill", "part": "head", "layer": "overlay", "faces": "top", "color": "hat" },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "top", "rows": [ "AAAAAAAA", "AAAAAAAA", "AAAaAAAA", "AAaAAAAA", "AAAAAAAA", "AAAAAAAA", "AAAAAAAA", "AAAAAAAA" ] },
+    { "op": "band", "part": "head", "layer": "overlay", "y": 0, "h": 1, "color": "hat" },
+    { "op": "band", "part": "head", "layer": "overlay", "y": 1, "h": 1, "color": "hat_band" },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "front", "rows": [ "AAAAAAAA", "pcpaaaXa" ] },
+
+    { "op": "note", "text": "---- 몸통: 다마스크 드레스, 코르셋, 초커, 어깨의 레이스 망토 ----" },
+    { "op": "fill", "part": "body", "faces": "all", "color": "dress" },
+    { "op": "pixels", "part": "body", "face": "front", "rows": [
+      "SSSXXSSS",
+      "SSSSSSSS",
+      "DDdSSdDD",
+      "DdDDDDdD",
+      "DDdDDdDD",
+      "CCXCCXCC",
+      "CCCCCCCC",
+      "CCXCCXCC",
+      "DdDDDDdD",
+      "DDdDdDDD",
+      "dDDdDDdD",
+      "DdDDDdDD"
+    ] },
+    { "op": "band", "part": "body", "y": 0, "h": 2, "color": "skin", "faces": ["right", "left", "back"] },
+    { "op": "band", "part": "body", "y": 5, "h": 3, "color": "corset" },
+    { "op": "pixels", "part": "body", "face": "top", "rows": [ "SSSSSSSS", "SSSSSSSS", "SSSSSSSS", "SSSSSSSS" ] },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "back", "y": 7, "rows": [ "VVVVVVVV", "V.V.V.V.", ".V.V.V.V" ] },
+    { "op": "band", "part": "body", "layer": "overlay", "y": 9, "h": 3, "color": "dress", "faces": ["front", "right", "left"] },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "front", "y": 9, "rows": [ "DdDDDdDD", "dDDdDDdD", "DDdDDDDd" ] },
+
+    { "op": "note", "text": "---- 팔: 드러난 어깨 위로 레이스 망토, 팔꿈치 아래 긴 장갑 ----" },
+    { "op": "fill", "part": "arm_r", "faces": "all", "color": "skin" },
+    { "op": "band", "part": "arm_r", "y": 5, "h": 7, "color": "gloves" },
+    { "op": "fill", "part": "arm_r", "faces": "bottom", "color": "gloves" },
+    { "op": "pixels", "part": "arm_r", "face": "right", "y": 6, "rows": [ ".d..", "..d.", ".d.." ] },
+    { "op": "fill", "part": "arm_r", "layer": "overlay", "faces": "top", "color": "cape" },
+    { "op": "pixels", "part": "arm_r", "layer": "overlay", "faces": ["right", "back"], "rows": [ "VVVV", "V.V.", ".V.V", "V.V.", ".V.." ] },
+    { "op": "mirror", "from": "arm_r", "to": "arm_l" },
+
+    { "op": "note", "text": "---- 다리: 치마 자락, 비치는 타이츠, 워커 부츠 ----" },
+    { "op": "fill", "part": "leg_r", "faces": "all", "color": "tights" },
+    { "op": "band", "part": "leg_r", "y": 0, "h": 2, "color": "dress" },
+    { "op": "fill", "part": "leg_r", "faces": "top", "color": "dress" },
+    { "op": "pixels", "part": "leg_r", "face": "front", "y": 2, "rows": [ "NnNk", "NnNk", "NNnk", "NnNk", "NnNk" ] },
+    { "op": "band", "part": "leg_r", "y": 7, "h": 5, "color": "boots" },
+    { "op": "band", "part": "leg_r", "y": 10, "h": 1, "color": "boot_trim" },
+    { "op": "band", "part": "leg_r", "y": 11, "h": 1, "color": "boot_sole" },
+    { "op": "fill", "part": "leg_r", "faces": "bottom", "color": "boot_sole" },
+    { "op": "pixels", "part": "leg_r", "face": "front", "y": 8, "rows": [ ".XX." ] },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 0, "h": 2, "color": "dress" },
+    { "op": "pixels", "part": "leg_r", "layer": "overlay", "face": "front", "rows": [ "DdDD", "dDDd" ] },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 7, "h": 1, "color": "boots" },
+    { "op": "mirror", "from": "leg_r", "to": "leg_l" },
+
+    { "op": "shade", "part": "*", "amount": 0.04, "seed": 71, "only": "dress" }
+  ]
+}

@@ -131,6 +131,7 @@ internal sealed class MainWindow : Window
         actions.Children.Add(_status);
         actions.Children.Add(Button("스킨 PNG 저장…", SaveSkinAsync));
         actions.Children.Add(Button("3D 렌더 PNG 저장…", SaveRenderAsync));
+        actions.Children.Add(Button("3D 메시 내보내기 (OBJ)…", ExportObjAsync));
         actions.Children.Add(Button("메이크업 되돌리기", () => { _overrides.Clear(); _makeup.Clear(); Open(_recipe!); return Task.CompletedTask; }));
         actions.Children.Add(new Separator { Margin = new Thickness(0, 6) });
         actions.Children.Add(new TextBlock { Text = "메이크업 변형으로 저장", FontWeight = FontWeight.SemiBold, Foreground = Ink });
@@ -389,6 +390,30 @@ internal sealed class MainWindow : Window
     }
 
     // ---- 저장 ----
+
+    private async Task ExportObjAsync()
+    {
+        if (_recipe == null) return;
+        var id = Workspace.Load(_recipe)["meta"]?["id"]?.GetValue<string>() ?? "doll";
+        string? path = null;
+        if (StorageProvider.CanSave)
+        {
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                SuggestedFileName = id + ".obj",
+                FileTypeChoices = new[] { new FilePickerFileType("Wavefront OBJ") { Patterns = new[] { "*.obj" } } },
+            });
+            if (file == null) return;
+            path = file.TryGetLocalPath();
+            if (path == null) { _status.Text = "로컬 파일로만 저장할 수 있습니다."; return; }
+        }
+        path ??= Path.Combine(Workspace.Home, "build", "studio", id + ".obj");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var json = VariantJson();
+        var dir = Path.GetDirectoryName(_recipe)!;
+        await Task.Run(() => Doll.ExportObj(json, dir, path, 0.010));
+        _status.Text = "내보냄: " + path + " (+ .mtl, .png) — Blender · Blockbench 에서 열 수 있습니다";
+    }
 
     private async Task SaveRenderAsync()
     {

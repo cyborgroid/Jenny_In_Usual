@@ -76,6 +76,37 @@ class DollTests(unittest.TestCase):
         self.assertLess(max(diff), 180 * 0.25)               # 바뀐 픽셀은 머리 높이 안에만
 
 
+class ExportTests(unittest.TestCase):
+    def test_obj_mesh_is_closed_and_outward(self):
+        d = df.doll(os.path.join(ROOT, "characters", "jenny", "jenny_cyber.dolly.json"))
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "doll.obj")
+            df.export_obj(d, path, cell=0.02)
+            verts, faces = [], []
+            for line in open(path):
+                if line.startswith("v "):
+                    verts.append([float(x) for x in line.split()[1:4]])
+                elif line.startswith("f "):
+                    faces.append([int(c.split("/")[0]) - 1 for c in line.split()[1:]])
+            self.assertTrue(os.path.exists(os.path.join(tmp, "doll.mtl")) and os.path.exists(os.path.join(tmp, "doll.png")))
+            vol = 0.0
+            for a, b, c in faces:
+                (ax, ay, az), (bx, by, bz), (cx, cy, cz) = verts[a], verts[b], verts[c]
+                vol += ax * (by * cz - bz * cy) - ay * (bx * cz - bz * cx) + az * (bx * cy - by * cx)
+            self.assertGreater(vol / 6, 0.03)   # 법선이 바깥을 향하고, 사람 크기의 부피
+            top = max(v[1] for v in verts)
+            self.assertAlmostEqual(top, 1.60, delta=0.05)
+
+    def test_figura_avatar_has_vanilla_bones(self):
+        d = df.doll(os.path.join(ROOT, "characters", "lila_finch", "lila_finch_casual.dolly.json"))
+        with tempfile.TemporaryDirectory() as tmp:
+            df.export_figura(d, tmp, "Lila Finch")
+            bb = json.load(open(os.path.join(tmp, "model.bbmodel")))
+            self.assertEqual([g["name"] for g in bb["outliner"]], ["Head", "Body", "RightArm", "LeftArm", "RightLeg", "LeftLeg"])
+            self.assertTrue(all(e["type"] == "mesh" and e["faces"] for e in bb["elements"]))
+            self.assertIn("setVisible(false)", open(os.path.join(tmp, "script.lua")).read())
+
+
 @unittest.skipIf(Image is None, "Pillow not installed")
 class PngInteropTests(unittest.TestCase):
     def test_c_encoder_is_readable_by_pillow(self):

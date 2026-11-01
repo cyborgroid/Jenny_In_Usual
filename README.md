@@ -32,6 +32,7 @@
   - `Jenny_Casual_Skin.png` : 보라색 집업 후드티와 회색 라운지 반바지 차림의 아늑한 방 안 일상복 스킨입니다.
   - `Jenny_DressUp_Skin.png` : 실버 크롭 재킷과 니트 미디 드레스, 보라 클러치를 매치한 외출복 스킨입니다.
   - `Jenny_Wedding_Skin.png` : 라벤더 자수 웨딩드레스와 베일 차림의 스킨입니다.
+  - `Jenny_Witch_Skin.png` : 보라 마녀 모자, 은빛 다마스크 드레스, 레이스 망토의 리틀 위치 스킨입니다.
   - `Eyle_Teal_Cyber_Skin.png` / `Eyle_Teal_Casual_Skin.png` : **에일 틸** — 적갈색 단발에 푸른 눈, 틸 코트 세트와 청록 후드티.
   - `Lila_Finch_Cyber_Skin.png` / `Lila_Finch_Casual_Skin.png` : **릴라 핀치** — 밝은 갈색 웨이브에 앰버 눈, 앰버 코트 세트와 오렌지 니트.
   - 모든 스킨은 3D 레퍼런스의 곡선미(조인 허리, 퍼지는 골반 라인, 다리 광택)와 얼굴(큰 눈, 속눈썹, 홍조, 머릿결 윤기)을 바꾸지 않고 음영으로 옮겼습니다.
@@ -42,6 +43,7 @@
   - `JennySisters.png` : 같은 코트 세트를 각자의 색으로 맞춰 입은 에일 틸(틸) · 제니(보라) · 릴라 핀치(앰버)의 3D 이미지입니다.
   - `JennyDressUp.png` : 실버 재킷과 미디 드레스 차림의 외출 룩 3D 이미지입니다.
   - `JennyMarriage.png` : 라벤더 자수 웨딩드레스와 베일 차림의 3D 이미지입니다.
+  - `JennyLovesWitchCraft.png` : 마녀 모자와 레이스 망토, 지팡이를 든 리틀 위치 룩의 3D 이미지입니다.
 
 ### 📚 04_References (법적·도의적 레퍼런스)
 - **핵심 작업:** 올바른 창작 문화를 위한 법적 보호 근거 및 인권 보호 자료 수집
@@ -54,7 +56,9 @@
 - **핵심 작업:** 최종 마인크래프트 등록용 패키징 및 무단 변형 방지를 위한 라이선스 적용
 - **배포 패키지 구조:**
   - `Install_Guide.md` : 마인크래프트 자바 에디션 / 베드락 에디션 적용 가이드
-  - `bedrock/JennyInUsual.mcpack` : 베드락 에디션용 스킨팩 (스킨 8종, 영어·한국어 이름)
+  - `bedrock/JennyInUsual.mcpack` : 베드락 에디션용 스킨팩 (스킨 9종, 영어·한국어 이름)
+  - `3d/JennyInUsual_OBJ.zip` : 9가지 룩의 곡선 3D 메시 (OBJ + MTL + 텍스처) — Blender · Blockbench 용
+  - `figura/<룩>/` : 곡선 모델을 게임 안 플레이어로 쓰는 Figura 모드용 아바타
   - `integrity.json` : 공식 스킨의 SHA-256 서명 — 무단 변형본 판별용
   - `previews/` : 곡선 3D 렌더(`3D/`, `Lineup_3D.png`), 스킨 미리보기, 라인업, Dolly Forge Studio 화면
 - **라이선스 가이드 (CCL 조건 적용):** `LICENSE.md`

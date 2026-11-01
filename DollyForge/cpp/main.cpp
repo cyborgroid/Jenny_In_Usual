@@ -2,7 +2,9 @@
 #include "bedrock_pack.hpp"
 #include "dolly.hpp"
 
+#include <algorithm>
 #include <cstring>
+#include <filesystem>
 #include <iostream>
 
 namespace {
@@ -17,6 +19,7 @@ const char *kUsage =
     "  dolly-forge diff <official.png> <other.png>\n"
     "  dolly-forge preview <skin.png> -o <png> [--scale N]\n"
     "  dolly-forge pack-bedrock <pack.json> -o <out.mcpack>\n"
+    "  dolly-forge export-3d <recipe.dolly.json> [--obj out.obj] [--figura dir] [--cell M] [--name NAME]\n"
     "  dolly-forge sculpt <recipe.dolly.json> -o <render.png> [--size WxH] [--yaw DEG] [--pitch DEG] [--zoom Z] [--hq] [--transparent]\n";
 
 void usage() {
@@ -54,6 +57,8 @@ struct Args {
     int width = 600, height = 900;
     double yaw = 22, pitch = 6, zoom = 1;
     bool hq = false, transparent = false;
+    std::string obj, figura, name;
+    double cell = 0;
 };
 
 Args parse(int argc, char **argv, int from) {
@@ -74,6 +79,10 @@ Args parse(int argc, char **argv, int from) {
         else if (s == "--pitch") a.pitch = std::stod(need("--pitch"));
         else if (s == "--zoom") a.zoom = std::stod(need("--zoom"));
         else if (s == "--hq") a.hq = true;
+        else if (s == "--obj") a.obj = need("--obj");
+        else if (s == "--figura") a.figura = need("--figura");
+        else if (s == "--name") a.name = need("--name");
+        else if (s == "--cell") a.cell = std::stod(need("--cell"));
         else if (s == "--transparent") a.transparent = true;
         else if (s == "--scale") {
             a.scale = std::stoi(need("--scale"));
@@ -148,6 +157,25 @@ int main(int argc, char **argv) {
         if (cmd == "pack-bedrock") {
             if (a.pos.size() != 1 || a.out.empty()) { usage(); return 2; }
             std::cout << dolly::build_bedrock_pack(a.pos[0], a.out);
+            return 0;
+        }
+        if (cmd == "export-3d") {
+            if (a.pos.size() != 1 || (a.obj.empty() && a.figura.empty())) { usage(); return 2; }
+            char err[512];
+            df_doll *doll = df_doll_from_recipe(a.pos[0].c_str(), err, sizeof err);
+            if (!doll) throw std::runtime_error(err);
+            int ok = 1;
+            if (!a.obj.empty()) {
+                ok = df_doll_export_obj(doll, a.obj.c_str(), a.cell > 0 ? a.cell : 0.010, err, sizeof err);
+                if (ok) std::cout << a.pos[0] << " -> " << a.obj << " (+ .mtl, .png)\n";
+            }
+            if (ok && !a.figura.empty()) {
+                std::filesystem::create_directories(a.figura);
+                ok = df_doll_export_figura(doll, a.figura.c_str(), (a.name.empty() ? a.pos[0] : a.name).c_str(), a.cell > 0 ? std::max(a.cell, 0.02) : 0.028, err, sizeof err);
+                if (ok) std::cout << a.pos[0] << " -> " << a.figura << "/ (Figura avatar)\n";
+            }
+            df_doll_free(doll);
+            if (!ok) throw std::runtime_error(err);
             return 0;
         }
         if (cmd == "sculpt") {
