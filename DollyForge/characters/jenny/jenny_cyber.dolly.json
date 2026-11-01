@@ -1,0 +1,152 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "jenny_cyber",
+    "character": "Jenny",
+    "title": {
+      "en_US": "Jenny (Cyber Casual)",
+      "ko_KR": "제니 (사이버 캐주얼)"
+    },
+    "outfit": "보라색 터틀넥 + 검은 코트 + 은색 버클 벨트 + 워커 부츠 + 꽃 머리핀",
+    "reference": "03_Sources/3D_Models/JennyCartoon3D.jpg",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": "jenny_base.dolly.json",
+  "palette": {
+    "turtleneck": "#6E3B98",
+    "turtleneck_dark": "turtleneck*0.8",
+    "coat": "#2B272F",
+    "coat_dark": "#1E1B22",
+    "coat_edge": "#3C3642",
+    "belt": "#17151A",
+    "buckle": "#C4C0CC",
+    "buckle_dark": "#8C8796",
+    "tights": "#3D2A2B",
+    "gloves": "#2C2135",
+    "boots": "#1B191F",
+    "boot_rib": "#2A2730",
+    "boot_trim": "#7442AE",
+    "boot_sole": "#121015",
+    "turtleneck_light": "turtleneck*1.16",
+    "tights_sheen": "tights*1.32",
+    "tights_shadow": "tights*0.78"
+  },
+  "legend": {
+    "T": "turtleneck", "t": "turtleneck_dark", "C": "coat", "d": "coat_dark",
+    "e": "coat_edge", "b": "belt", "X": "buckle", "x": "buckle_dark",
+    "G": "gloves", "N": "tights", "O": "boots", "o": "boot_rib",
+    "V": "boot_trim", "Z": "boot_sole", "U": "turtleneck_light", "n": "tights_sheen",
+    "k": "tights_shadow"
+  },
+  "ops": [
+    { "op": "note", "text": "---- 몸통: 터틀넥이 보이는 열린 코트, 은색 버클 벨트, 코트 스커트 ----" },
+    { "op": "fill", "part": "body", "faces": "all", "color": "coat" },
+    { "op": "fill", "part": "body", "faces": "bottom", "color": "coat_dark" },
+    { "op": "band", "part": "body", "y": 7, "h": 1, "color": "belt" },
+    { "op": "note", "text": "허리 곡선: 벨트로 조인 허리의 옆면 그림자 (레퍼런스 실루엣 그대로)" },
+    { "op": "rect", "part": "body", "faces": ["right", "left"], "x": 0, "y": 5, "w": 4, "h": 2, "color": "coat_dark" },
+    { "op": "pixels", "part": "body", "face": "front", "rows": [
+      "CCTTTTCC",
+      "CeTttTeC",
+      "CeTTTTeC",
+      "CeTUTTeC",
+      "CeTttTeC",
+      "dCeTTeCd",
+      "dCeTTeCd",
+      "dbbXxbbd",
+      "CCCxeCCC",
+      "CCCXeCCC",
+      "CCCCeCCC",
+      "dCCCedCd"
+    ] },
+    { "op": "pixels", "part": "body", "face": "back", "y": 8, "rows": [
+      "CCCCeCCC",
+      "CCCCeCCC",
+      "CCCCeCCC",
+      "dCCdedCd"
+    ] },
+    { "op": "pixels", "part": "body", "face": "top", "rows": [
+      "CCCCCCCC",
+      "CCTTTTCC",
+      "CCTttTCC",
+      "CeTTTTeC"
+    ] },
+    { "op": "band", "part": "body", "faces": ["right", "left"], "y": 11, "h": 1, "color": "coat_dark" },
+    { "op": "note", "text": "body overlay: 퍼지는 코트 자락 (머리카락 영역 아래쪽)" },
+    { "op": "band", "part": "body", "layer": "overlay", "y": 8, "h": 4, "color": "coat" },
+    { "op": "band", "part": "body", "layer": "overlay", "y": 11, "h": 1, "color": "coat_edge" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": ["front", "back"], "x": 4, "y": 8, "w": 1, "h": 3, "color": "coat_edge" },
+    { "op": "note", "text": "골반에서 퍼지는 코트 자락 위의 지퍼 장식" },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "front", "x": 3, "y": 8, "rows": [
+      "x",
+      "X"
+    ] },
+    { "op": "note", "text": "---- 팔 (slim 3px): 코트 소매, 위팔 스트랩, 소맷부리 버클, 장갑 ----" },
+    { "op": "fill", "part": "arm_r", "faces": "all", "color": "coat" },
+    { "op": "band", "part": "arm_r", "y": 3, "h": 1, "color": "belt" },
+    { "op": "band", "part": "arm_r", "y": 8, "h": 1, "color": "belt" },
+    { "op": "band", "part": "arm_r", "y": 9, "h": 1, "color": "coat_edge" },
+    { "op": "rect", "part": "arm_r", "face": "right", "x": 2, "y": 3, "w": 1, "h": 1, "color": "buckle" },
+    { "op": "rect", "part": "arm_r", "face": "right", "x": 1, "y": 8, "w": 1, "h": 1, "color": "buckle" },
+    { "op": "band", "part": "arm_r", "y": 10, "h": 2, "color": "gloves" },
+    { "op": "fill", "part": "arm_r", "faces": "bottom", "color": "gloves" },
+    { "op": "note", "text": "팔의 둥근 볼륨: 몸쪽 안면은 그늘" },
+    { "op": "rect", "part": "arm_r", "face": "left", "x": 0, "y": 0, "w": 4, "h": 8, "color": "coat_dark" },
+    { "op": "band", "part": "arm_r", "layer": "overlay", "y": 8, "h": 2, "color": "coat_edge" },
+    { "op": "band", "part": "arm_r", "layer": "overlay", "y": 8, "h": 1, "color": "belt" },
+    { "op": "rect", "part": "arm_r", "layer": "overlay", "face": "right", "x": 1, "y": 8, "w": 1, "h": 1, "color": "buckle" },
+    { "op": "mirror", "from": "arm_r", "to": "arm_l" },
+    { "op": "note", "text": "---- 다리: 코트 자락, 어두운 타이츠, 보라 포인트 워커 부츠 ----" },
+    { "op": "fill", "part": "leg_r", "faces": "all", "color": "tights" },
+    { "op": "band", "part": "leg_r", "y": 0, "h": 2, "color": "coat" },
+    { "op": "band", "part": "leg_r", "y": 2, "h": 1, "color": "coat_edge" },
+    { "op": "fill", "part": "leg_r", "faces": "top", "color": "coat" },
+    { "op": "band", "part": "leg_r", "y": 7, "h": 5, "color": "boots" },
+    { "op": "band", "part": "leg_r", "y": 9, "h": 1, "color": "boot_rib" },
+    { "op": "band", "part": "leg_r", "y": 10, "h": 1, "color": "boot_trim" },
+    { "op": "band", "part": "leg_r", "y": 11, "h": 1, "color": "boot_sole" },
+    { "op": "fill", "part": "leg_r", "faces": "bottom", "color": "boot_sole" },
+    { "op": "pixels", "part": "leg_r", "face": "front", "y": 8, "rows": [
+      ".Xx."
+    ] },
+    { "op": "note", "text": "다리 곡선: 레퍼런스 타이츠의 광택 띠 (허벅지 앞-바깥 → 무릎 → 종아리), 안쪽은 그늘" },
+    { "op": "pixels", "part": "leg_r", "face": "front", "y": 3, "rows": [
+      "NnNk",
+      "NnNk",
+      "NnNk",
+      "NnNk"
+    ] },
+    { "op": "pixels", "part": "leg_r", "face": "right", "y": 3, "rows": [
+      "NNnN",
+      "NNnN",
+      "NNnN",
+      "NNnN"
+    ] },
+    { "op": "pixels", "part": "leg_r", "face": "left", "y": 3, "rows": [
+      "kkkk",
+      "kkkk",
+      "kkkk",
+      "kkkk"
+    ] },
+    { "op": "pixels", "part": "leg_r", "face": "back", "y": 3, "rows": [
+      "kNNN",
+      "kNNN",
+      "kNNN",
+      "kNNN"
+    ] },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 0, "h": 2, "color": "coat" },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 2, "h": 1, "color": "coat_edge" },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 7, "h": 1, "color": "boots" },
+    { "op": "pixels", "part": "leg_r", "layer": "overlay", "face": "front", "y": 7, "rows": [
+      "OVVO"
+    ] },
+    { "op": "mirror", "from": "leg_r", "to": "leg_l" },
+    { "op": "note", "text": "---- 천결 질감 ----" },
+    { "op": "shade", "part": "*", "amount": 0.05, "seed": 21, "only": "coat" },
+    { "op": "shade", "part": "*", "layer": "overlay", "amount": 0.05, "seed": 22, "only": "coat" },
+    { "op": "shade", "part": "body", "amount": 0.06, "seed": 23, "only": "turtleneck" },
+    { "op": "shade", "part": "legs", "amount": 0.025, "seed": 24, "only": "tights" }
+  ]
+}

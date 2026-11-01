@@ -1,0 +1,56 @@
+{
+  "cyber": {
+    "image": "JennyCartoon3D.jpg",
+    "colors": {
+      "hair": "#845443",
+      "hair_side": "#74473D",
+      "skin": "#DDA4A7",
+      "blush": "#CA9AA3",
+      "eye": "#9E3074",
+      "flower_petal": "#985BAE",
+      "flower_center": "#D3B070",
+      "turtleneck": "#623787",
+      "coat": "#272429",
+      "coat_sleeve": "#1D1A1E",
+      "belt": "#1B191F",
+      "buckle": "#7E727F",
+      "tights": "#342122",
+      "gloves": "#1D1622",
+      "boots": "#0D0B0F"
+    }
+  },
+  "casual": {
+    "image": "JennyInUsual.jpg",
+    "colors": {
+      "hair": "#764839",
+      "skin": "#C98375",
+      "hoodie": "#4D2653",
+      "top": "#2E222A",
+      "shorts": "#9C787D",
+      "socks": "#BD9298"
+    }
+  },
+  "sisters": {
+    "image": "JennySisters.png",
+    "colors": {
+      "eyle_hair": "#4D2022",
+      "eyle_eye": "#64719E",
+      "eyle_turtleneck": "#055979",
+      "lila_hair": "#76503D",
+      "lila_eye": "#AE4116",
+      "lila_flower": "#D65C0E",
+      "lila_turtleneck": "#AB5709",
+      "lila_gloves": "#683F26"
+    }
+  },
+  "friends_casual": {
+    "image": "JennyInUsual.jpg",
+    "colors": {
+      "eyle_hoodie": "#186A8B",
+      "eyle_hair": "#532125",
+      "lila_sweater": "#913D1C",
+      "lila_top": "#372221",
+      "lila_hair": "#6B3D2E"
+    }
+  }
+}

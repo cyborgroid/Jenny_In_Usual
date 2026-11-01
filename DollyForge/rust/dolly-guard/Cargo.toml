@@ -1,0 +1,8 @@
+[package]
+name = "dolly-guard"
+version = "0.1.0"
+edition = "2021"
+description = "Dolly Forge integrity guard: signs official skins, detects modified copies, lints recipe licensing"
+publish = false
+
+[dependencies]

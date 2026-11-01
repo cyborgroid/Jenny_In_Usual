@@ -1,0 +1,97 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "jenny_dressup",
+    "character": "Jenny",
+    "title": {
+      "en_US": "Jenny (Silver Dress-Up)",
+      "ko_KR": "제니 (실버 드레스업)"
+    },
+    "outfit": "실버 크롭 재킷 + 회색 니트 미디 드레스 + 보라 클러치 + 실버 앵클부츠",
+    "reference": "03_Sources/3D_Models/JennyDressUp.png",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": "jenny_base.dolly.json",
+  "palette": {
+    "dress": "#8F8D96",
+    "dress_dark": "dress*0.9",
+    "jacket": "#A9A7B1",
+    "jacket_edge": "jacket*0.74",
+    "boots": "#BDBBC4",
+    "boot_sole": "#4A4851",
+    "bag": "#7A4BB0",
+    "bag_clasp": "#D9D7DE",
+    "dress_light": "dress*1.1"
+  },
+  "legend": {
+    "D": "dress", "d": "dress_dark", "J": "jacket", "j": "jacket_edge",
+    "O": "boots", "o": "boot_sole", "A": "bag", "a": "bag_clasp",
+    "E": "dress_light"
+  },
+  "ops": [
+    { "op": "note", "text": "---- 몸통: 열린 크롭 재킷 + 니트 드레스 ----" },
+    { "op": "fill", "part": "body", "faces": "all", "color": "dress" },
+    { "op": "pixels", "part": "body", "face": "front", "rows": [
+      "JJDDDDJJ",
+      "JjDDDDjJ",
+      "JjDDDDjJ",
+      "JjDEDDjJ",
+      "JjDddDjJ",
+      "JJdDDdJJ",
+      "jjdDDdjj",
+      "DDDdDDDD",
+      "DDDdDDDD",
+      "DDDdDDDD",
+      "DDDdDDDD",
+      "DDDdDDDD"
+    ] },
+    { "op": "rect", "part": "body", "faces": ["back", "right", "left"], "x": 0, "y": 0, "w": 8, "h": 6, "color": "jacket" },
+    { "op": "band", "part": "body", "y": 6, "h": 1, "color": "jacket_edge" },
+    { "op": "pixels", "part": "body", "face": "front", "y": 6, "rows": [
+      "jjDdDDjj"
+    ] },
+    { "op": "fill", "part": "body", "faces": "top", "color": "jacket" },
+    { "op": "note", "text": "허리 곡선: 옆면 그림자" },
+    { "op": "rect", "part": "body", "faces": ["right", "left"], "x": 0, "y": 4, "w": 4, "h": 2, "color": "jacket_edge" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 0, "y": 4, "w": 2, "h": 3, "color": "jacket" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 6, "y": 4, "w": 2, "h": 3, "color": "jacket" },
+    { "op": "band", "part": "body", "layer": "overlay", "y": 6, "h": 1, "color": "jacket_edge" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 2, "y": 6, "w": 4, "h": 1, "color": "clear" },
+    { "op": "note", "text": "---- 팔: 재킷 소매, 맨손, 왼손 클러치 ----" },
+    { "op": "fill", "part": "arm_r", "faces": "all", "color": "jacket" },
+    { "op": "band", "part": "arm_r", "y": 10, "h": 1, "color": "jacket_edge" },
+    { "op": "band", "part": "arm_r", "y": 11, "h": 1, "color": "skin" },
+    { "op": "fill", "part": "arm_r", "faces": "bottom", "color": "skin" },
+    { "op": "mirror", "from": "arm_r", "to": "arm_l" },
+    { "op": "pixels", "part": "arm_l", "layer": "overlay", "face": "left", "y": 8, "rows": [
+      ".aa.",
+      "AAAA",
+      "AAAA"
+    ] },
+    { "op": "note", "text": "---- 다리: 미디 드레스 자락, 발목, 실버 앵클부츠 ----" },
+    { "op": "fill", "part": "leg_r", "faces": "all", "color": "dress" },
+    { "op": "band", "part": "leg_r", "y": 7, "h": 1, "color": "dress_dark" },
+    { "op": "band", "part": "leg_r", "y": 8, "h": 1, "color": "skin" },
+    { "op": "band", "part": "leg_r", "y": 9, "h": 2, "color": "boots" },
+    { "op": "band", "part": "leg_r", "y": 11, "h": 1, "color": "boot_sole" },
+    { "op": "fill", "part": "leg_r", "faces": "bottom", "color": "boot_sole" },
+    { "op": "pixels", "part": "leg_r", "face": "front", "y": 0, "rows": [
+      "DEDd",
+      "DEDd",
+      "DEDd",
+      "DEDd",
+      "DEDd",
+      "DEDd",
+      "DEDd"
+    ] },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 4, "h": 3, "color": "dress" },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 7, "h": 1, "color": "dress_dark" },
+    { "op": "mirror", "from": "leg_r", "to": "leg_l" },
+    { "op": "note", "text": "---- 니트 질감 ----" },
+    { "op": "shade", "part": "*", "amount": 0.05, "seed": 41, "only": "dress" },
+    { "op": "shade", "part": "*", "layer": "overlay", "amount": 0.05, "seed": 42, "only": "dress" },
+    { "op": "shade", "part": "*", "amount": 0.04, "seed": 43, "only": "jacket" }
+  ]
+}

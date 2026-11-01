@@ -1,0 +1,153 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "jenny_base",
+    "character": "Jenny",
+    "abstract": true,
+    "description": "제니의 얼굴·머리·꽃핀. 모든 의상 레시피가 이 파일을 extends 한다 (단독으로는 스킨을 만들지 않음).",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "model": "slim",
+  "palette": {
+    "skin": "#F2C4B0",
+    "skin_shade": "skin*0.9",
+    "blush": "#EC9CA2",
+    "mouth": "#C9767A",
+    "brow": "hair*0.78",
+    "lash": "#2B1B24",
+    "eye": "#A8317E",
+    "eye_light": "#D460AE",
+    "eye_white": "#FFF6F8",
+    "hair": "#8E5A44",
+    "hair_dark": "hair*0.79",
+    "hair_light": "hair*1.18",
+    "flower_petal": "#A066C4",
+    "flower_dark": "flower_petal*0.8",
+    "flower_center": "#EBC35C",
+    "hair_shine": "hair*1.32"
+  },
+  "legend": {
+    "H": "hair", "h": "hair_dark", "l": "hair_light", "S": "skin",
+    "s": "skin_shade", "P": "blush", "M": "mouth", "B": "brow",
+    "K": "lash", "W": "eye_white", "E": "eye", "F": "eye_light",
+    "p": "flower_petal", "q": "flower_dark", "c": "flower_center", "L": "hair_shine"
+  },
+  "ops": [
+    { "op": "note", "text": "---- 머리: 긴 갈색 머리, 옆으로 넘긴 앞머리, 보라 꽃핀 ----" },
+    { "op": "fill", "part": "head", "faces": "all", "color": "hair" },
+    { "op": "fill", "part": "head", "faces": "bottom", "color": "skin_shade" },
+    { "op": "pixels", "part": "head", "face": "front", "rows": [
+      "HHHHHHHH",
+      "HHHHHHHH",
+      "HBBSSBBH",
+      "HKKSSKKH",
+      "HWESSEWH",
+      "HWFSSFWH",
+      "HPSMMSPH",
+      "HSSSSSSH"
+    ] },
+    { "op": "pixels", "part": "head", "faces": ["right", "back"], "y": 5, "rows": [
+      "hHHhHHhH",
+      "HhHHhHHh",
+      "hhhhhhhh"
+    ] },
+    { "op": "pixels", "part": "head", "face": "left", "y": 5, "flip": true, "rows": [
+      "hHHhHHhH",
+      "HhHHhHHh",
+      "hhhhhhhh"
+    ] },
+    { "op": "pixels", "part": "head", "face": "top", "rows": [
+      "HHHHHHHH",
+      "HHlHHHHH",
+      "HHhlHHHH",
+      "HHhlHHHH",
+      "HHhlHHHH",
+      "HHhlHHHH",
+      "HHhHHHHH",
+      "HHHHHHHH"
+    ] },
+    { "op": "fill", "part": "head", "layer": "overlay", "faces": ["top", "right", "left", "back"], "color": "hair" },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "front", "rows": [
+      "pcpHLLHH",
+      "pppHHHlH",
+      "q......H",
+      "h......H",
+      "H......h",
+      "H......H",
+      "h......h",
+      "h......h"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "right", "rows": [
+      "HHHHHHqp",
+      "HHHLLHHq",
+      "HhHlHHhH",
+      "HhHlHhHH",
+      "hhHlHhHl",
+      "hHHlhHHl",
+      "hHhHhHhH",
+      "hhhhhhhh"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "left", "flip": true, "rows": [
+      "HHHHHHHH",
+      "HHHLLHHH",
+      "HhHlHHhH",
+      "HhHlHhHH",
+      "hhHlHhHl",
+      "hHHlhHHl",
+      "hHhHhHhH",
+      "hhhhhhhh"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "back", "rows": [
+      "HHHHHHHH",
+      "HHLLLLHH",
+      "HhHlHHhH",
+      "HhHlHlhH",
+      "hhHlHlhH",
+      "hHHlhlHh",
+      "hHhHhlHh",
+      "hHhHhHhh"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "top", "rows": [
+      "HHHHHHHH",
+      "HHlHHHHH",
+      "HHhlHHHH",
+      "HHhlHHHH",
+      "HHhlHHHH",
+      "HHhlLLHH",
+      "q......H",
+      "ppHHHHHH"
+    ] },
+    { "op": "note", "text": "---- 어깨 앞으로 넘어온 머리 + 등 뒤로 내려오는 긴 머리 (body overlay) ----" },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "front", "rows": [
+      "HH....HH",
+      "H......H",
+      "H......h",
+      "h......."
+    ] },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "back", "rows": [
+      "HhHlHHhH",
+      "HhHlHlhH",
+      "hhHlHlhH",
+      "hHHlhlHh",
+      "hHhHhlHh",
+      ".hhHhHh.",
+      "..hhhh.."
+    ] },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "right", "rows": [
+      "HH..",
+      "Hh..",
+      "h..."
+    ] },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "left", "flip": true, "rows": [
+      "HH..",
+      "Hh..",
+      "h..."
+    ] },
+    { "op": "note", "text": "---- 머리결 질감 + 윤기 (얼굴은 건드리지 않음) ----" },
+    { "op": "shade", "part": "head", "layer": "overlay", "amount": 0.035, "seed": 11, "only": "hair" },
+    { "op": "shade", "part": "head", "faces": ["top", "right", "left", "back"], "amount": 0.035, "seed": 12, "only": "hair" },
+    { "op": "shade", "part": "body", "layer": "overlay", "amount": 0.035, "seed": 13, "only": "hair" }
+  ]
+}

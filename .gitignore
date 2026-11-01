@@ -1,0 +1,7 @@
+# Dolly Forge 빌드 산출물 (배포 결과물은 03_Sources / 05_Distribution 에 커밋)
+DollyForge/build/
+DollyForge/rust/*/target/
+DollyForge/csharp/*/bin/
+DollyForge/csharp/*/obj/
+__pycache__/
+*.pyc

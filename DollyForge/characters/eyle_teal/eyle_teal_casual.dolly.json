@@ -1,0 +1,27 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "eyle_teal_casual",
+    "character": "Eyle Teal",
+    "title": { "en_US": "Eyle Teal (Gamer Hoodie)", "ko_KR": "에일 틸 (게이머 후드티)" },
+    "outfit": "청록 후드티(끈 달린 풀오버) + 회색 반바지 + 청록 줄무늬 흰 양말",
+    "reference": "03_Sources/3D_Models/JennyInUsual.jpg (왼쪽, 게임 패드를 든 인물)",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": ["eyle_teal_base.dolly.json", "../jenny/jenny_casual.dolly.json"],
+  "palette": {
+    "// reference": "JennyInUsual.jpg 추출값 hoodie #1B6A88 (조명 보정 전)",
+    "hoodie": "#2185A8",
+    "top": "hoodie*0.86",
+    "zip": "hoodie*0.86",
+    "sock_stripe": "#2A9DB8"
+  },
+  "legend": { "z": "sock_stripe" },
+  "ops": [
+    { "op": "note", "text": "양말 윗단의 청록 줄무늬 (레퍼런스 그대로)" },
+    { "op": "band", "part": "legs", "y": 9, "h": 1, "color": "sock_stripe" },
+    { "op": "band", "part": "legs", "layer": "overlay", "y": 8, "h": 1, "color": "socks" }
+  ]
+}

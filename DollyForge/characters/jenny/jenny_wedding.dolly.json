@@ -1,0 +1,125 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "jenny_wedding",
+    "character": "Jenny",
+    "title": {
+      "en_US": "Jenny (Wedding Day)",
+      "ko_KR": "제니 (웨딩 데이)"
+    },
+    "outfit": "라벤더 자수 웨딩드레스 + 베일 + 보라 꽃핀 + 실버 부츠",
+    "reference": "03_Sources/3D_Models/JennyMarriage.png",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": "jenny_base.dolly.json",
+  "palette": {
+    "gown": "#F3F0F6",
+    "gown_shade": "gown*0.92",
+    "lace": "#C7B2E2",
+    "lace_dark": "#8A68B6",
+    "veil": "#FAF8FC",
+    "veil_shade": "veil*0.93",
+    "boots": "#BDBBC4",
+    "boot_sole": "#55535C"
+  },
+  "legend": {
+    "D": "gown", "d": "gown_shade", "Y": "lace", "y": "lace_dark",
+    "V": "veil", "v": "veil_shade", "O": "boots", "o": "boot_sole"
+  },
+  "ops": [
+    { "op": "note", "text": "---- 베일: 머리 뒤로 내려오는 베일 (꽃핀과 앞머리는 그대로) ----" },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "back", "rows": [
+      "VVVVVVVV",
+      "VVVVVVVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV"
+    ] },
+    { "op": "rect", "part": "head", "layer": "overlay", "face": ["right", "left"], "x": 0, "y": 0, "w": 8, "h": 1, "color": "veil" },
+    { "op": "rect", "part": "head", "layer": "overlay", "face": "right", "x": 0, "y": 1, "w": 3, "h": 7, "color": "veil" },
+    { "op": "rect", "part": "head", "layer": "overlay", "face": "left", "x": 5, "y": 1, "w": 3, "h": 7, "color": "veil" },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "back", "rows": [
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      "VvVVVvVV",
+      ".vVVVvV.",
+      "..VVVV.."
+    ] },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "right", "x": 0, "y": 0, "w": 2, "h": 8, "color": "veil" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "left", "x": 2, "y": 0, "w": 2, "h": 8, "color": "veil" },
+    { "op": "note", "text": "---- 드레스: 라벤더 자수 보디스, 허리선, 긴 치마 ----" },
+    { "op": "fill", "part": "body", "faces": "all", "color": "gown" },
+    { "op": "pixels", "part": "body", "face": "front", "rows": [
+      "DDDYDDDD",
+      "DDYyYDDD",
+      "DYDyDYDD",
+      "DDDYDDDD",
+      "dDDDDDDd",
+      "dDDDDDDd",
+      "YDYDYDYD",
+      "DDdDDdDD",
+      "DDdDDdDD",
+      "DDdDDdDD",
+      "DDdDDdDD",
+      "DDdDDdDD"
+    ] },
+    { "op": "band", "part": "body", "y": 6, "h": 1, "color": "lace", "faces": ["right", "left", "back"] },
+    { "op": "note", "text": "허리 곡선: 보디스 옆면 그림자" },
+    { "op": "rect", "part": "body", "faces": ["right", "left"], "x": 0, "y": 4, "w": 4, "h": 2, "color": "gown_shade" },
+    { "op": "band", "part": "body", "layer": "overlay", "y": 9, "h": 3, "color": "gown", "faces": ["front", "right", "left"] },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "back", "x": 0, "y": 9, "w": 8, "h": 3, "color": "gown" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 2, "y": 10, "w": 1, "h": 2, "color": "gown_shade" },
+    { "op": "note", "text": "---- 팔: 긴 소매, 라벤더 소맷단, 맨손 ----" },
+    { "op": "fill", "part": "arm_r", "faces": "all", "color": "gown" },
+    { "op": "band", "part": "arm_r", "y": 10, "h": 1, "color": "lace" },
+    { "op": "band", "part": "arm_r", "y": 11, "h": 1, "color": "skin" },
+    { "op": "fill", "part": "arm_r", "faces": "bottom", "color": "skin" },
+    { "op": "pixels", "part": "arm_r", "face": "front", "y": 2, "rows": [
+      ".Y.",
+      "Y.Y",
+      ".Y."
+    ] },
+    { "op": "mirror", "from": "arm_r", "to": "arm_l" },
+    { "op": "note", "text": "---- 다리: 바닥까지 오는 치마 + 끝에 살짝 보이는 실버 부츠 ----" },
+    { "op": "fill", "part": "leg_r", "faces": "all", "color": "gown" },
+    { "op": "band", "part": "leg_r", "y": 10, "h": 1, "color": "lace" },
+    { "op": "band", "part": "leg_r", "y": 11, "h": 1, "color": "boots" },
+    { "op": "fill", "part": "leg_r", "faces": "bottom", "color": "boot_sole" },
+    { "op": "pixels", "part": "leg_r", "face": "front", "rows": [
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD"
+    ] },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 2, "h": 8, "color": "gown" },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 10, "h": 1, "color": "lace" },
+    { "op": "pixels", "part": "leg_r", "layer": "overlay", "face": "front", "y": 3, "rows": [
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "DdDD",
+      "Y.Y."
+    ] },
+    { "op": "mirror", "from": "leg_r", "to": "leg_l" },
+    { "op": "note", "text": "---- 원단 질감 ----" },
+    { "op": "shade", "part": "*", "amount": 0.03, "seed": 51, "only": "gown" },
+    { "op": "shade", "part": "*", "layer": "overlay", "amount": 0.03, "seed": 52, "only": "gown" }
+  ]
+}

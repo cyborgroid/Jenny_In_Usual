@@ -1,0 +1,59 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "lila_finch_base",
+    "character": "Lila Finch",
+    "abstract": true,
+    "description": "릴라 핀치의 얼굴·머리·꽃핀. 밝은 갈색 어깨 길이 웨이브, 앰버 눈, 오른쪽 붉은 꽃핀 (JennySisters.png 오른쪽 인물).",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": "../jenny/jenny_base.dolly.json",
+  "palette": {
+    "// reference": "JennySisters.png 추출값 hair #774F3C · eye #B44219 · flower #D65014 (조명 보정 전)",
+    "hair": "#A06C50",
+    "eye": "#C8541E",
+    "eye_light": "#EE8A3C",
+    "flower_petal": "#DE4A22",
+    "flower_center": "#F2C844"
+  },
+  "ops": [
+    { "op": "note", "text": "---- 꽃핀을 보는 사람 기준 오른쪽으로 — 레퍼런스 위치 그대로 ----" },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "front", "rows": [
+      "HHLLHpcp",
+      "HlHHHppp",
+      "H......q",
+      "H......H",
+      "h......h",
+      "H......H",
+      "h......h",
+      "H......H"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "top", "y": 7, "rows": [
+      "HHHHHHpp"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "top", "y": 6, "rows": [
+      "HHhLLLqH"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "right", "x": 6, "rows": [
+      "HH",
+      ".H"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "left", "rows": [
+      "pq",
+      "q."
+    ] },
+    { "op": "note", "text": "---- 어깨에 닿는 웨이브: 등 뒤 긴 머리를 어깨 바로 아래에서 바깥으로 말아 끝낸다 ----" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "back", "x": 0, "y": 2, "w": 8, "h": 5, "color": "clear" },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "back", "y": 1, "rows": [
+      "HhHlHHhH",
+      "hh.hh.hh"
+    ] },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 0, "y": 2, "w": 8, "h": 2, "color": "clear" },
+    { "op": "pixels", "part": "body", "layer": "overlay", "face": "front", "y": 1, "rows": [
+      "lh....hl"
+    ] },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": ["right", "left"], "x": 0, "y": 2, "w": 4, "h": 1, "color": "clear" }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "tool": "dolly-guard 0.1.0",
+  "license": "CC-BY-NC-ND-4.0",
+  "note": "sha256_pixels 는 디코딩한 RGBA(투명 픽셀 정규화) + 모델 바이트의 해시. 다시 저장해도 그림이 같으면 일치한다.",
+  "skins": [
+    { "name": "Jenny_Cyber_Skin.png", "path": "../03_Sources/Minecraft_Skins/Jenny_Cyber_Skin.png", "model": "slim", "sha256_file": "04b28f2f020719e6f9fbdb02b5a58b7c6151357bdeb86a3a47290c0d98d37bf2", "sha256_pixels": "677aebea6ad2f113518e9667062a65c38c9d319ff8fc3475f9c5b162a692469c" },
+    { "name": "Jenny_Casual_Skin.png", "path": "../03_Sources/Minecraft_Skins/Jenny_Casual_Skin.png", "model": "slim", "sha256_file": "5ef0ee5d297e2dcf002d4aea34c2996194fd696f037e42d30989a0131bf07a14", "sha256_pixels": "920cc16d2f5aabb216dcd98ea98b963f35a1b2c70412643f162d16685af1698b" },
+    { "name": "Jenny_DressUp_Skin.png", "path": "../03_Sources/Minecraft_Skins/Jenny_DressUp_Skin.png", "model": "slim", "sha256_file": "7c357595832852a51aced4562a1048007f9c39e437d4efb192ed394ed1ffb45f", "sha256_pixels": "9c49d49d6920daaa5b6cb87ca38ffa3f74e1ce34f878c8a4c1c60eaeda7ad956" },
+    { "name": "Jenny_Wedding_Skin.png", "path": "../03_Sources/Minecraft_Skins/Jenny_Wedding_Skin.png", "model": "slim", "sha256_file": "166612c357f09a3a25cfcb3d529864d0d18cd42199ad0c50eaed896a249119e7", "sha256_pixels": "2efd4a4b9537aa12f9028b7aacb371f2a6baf55fac5b227fcc5c20043a6241c4" },
+    { "name": "Eyle_Teal_Cyber_Skin.png", "path": "../03_Sources/Minecraft_Skins/Eyle_Teal_Cyber_Skin.png", "model": "slim", "sha256_file": "304e269f3f7747b65c62c15e329bc05925ef54790896b632337c2e32d849e89d", "sha256_pixels": "d79d554a2d11ee86ae99509da41de5af774e9538d6fbd92c609223b559ac2846" },
+    { "name": "Eyle_Teal_Casual_Skin.png", "path": "../03_Sources/Minecraft_Skins/Eyle_Teal_Casual_Skin.png", "model": "slim", "sha256_file": "a187163913afa14bceb30f328d445debc4c1ba0bd8545f8c68f6d4dfbde041b7", "sha256_pixels": "1d3e6e8365038c94156c5f63b2634b455b908cc466fecda54c98112e4636f2c1" },
+    { "name": "Lila_Finch_Cyber_Skin.png", "path": "../03_Sources/Minecraft_Skins/Lila_Finch_Cyber_Skin.png", "model": "slim", "sha256_file": "9017951c8d9f12e29b5a226c3246860776223e5934b67e8dd49b8e78cafe9ae0", "sha256_pixels": "5d627e987695bc30abe0f1a765101a2074a470592b1ef7dc0bb07589378cc7fc" },
+    { "name": "Lila_Finch_Casual_Skin.png", "path": "../03_Sources/Minecraft_Skins/Lila_Finch_Casual_Skin.png", "model": "slim", "sha256_file": "172629a1da3aff84c77939c48358cec9c7f3aa37cc90c4ed44e1907b413a61be", "sha256_pixels": "8186f6938828fee0e157f56998ccf3e1812a17fc15eb0182a4e18bc25c246ad0" }
+  ]
+}

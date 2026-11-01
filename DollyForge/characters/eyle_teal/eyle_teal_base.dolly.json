@@ -1,0 +1,57 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "eyle_teal_base",
+    "character": "Eyle Teal",
+    "abstract": true,
+    "description": "에일 틸의 얼굴·머리·꽃핀. 제니와 같은 얼굴 구조 위에 적갈색 단발, 푸른 눈, 오른쪽 파란 꽃핀 (JennySisters.png 왼쪽 인물).",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": "../jenny/jenny_base.dolly.json",
+  "palette": {
+    "// reference": "JennySisters.png 추출값 hair #462326 · eye #65709F (조명 보정 전)",
+    "hair": "#7A3530",
+    "eye": "#5F72C8",
+    "eye_light": "#93A6EC",
+    "blush": "#EE9EA6",
+    "flower_petal": "#3F78DA",
+    "flower_center": "#F0D04A"
+  },
+  "ops": [
+    { "op": "note", "text": "---- 꽃핀을 보는 사람 기준 오른쪽(캐릭터 왼쪽)으로 — 레퍼런스 위치 그대로 ----" },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "front", "rows": [
+      "HHLLHpcp",
+      "HlHHHppp",
+      "H......q",
+      "H......H",
+      "H......H",
+      "h......h",
+      "h......h",
+      "hh....hh"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "top", "y": 7, "rows": [
+      "HHHHHHpp"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "top", "y": 6, "rows": [
+      "HHhLLLqH"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "right", "x": 6, "rows": [
+      "HH",
+      ".H"
+    ] },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "left", "rows": [
+      "pq",
+      "q."
+    ] },
+    { "op": "note", "text": "---- 턱선 단발: 어깨·등의 긴 머리를 지우고 목덜미에서 끝낸다 ----" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 0, "y": 0, "w": 8, "h": 4, "color": "clear" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "back", "x": 0, "y": 0, "w": 8, "h": 7, "color": "clear" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": ["right", "left"], "x": 0, "y": 0, "w": 4, "h": 3, "color": "clear" },
+    { "op": "pixels", "part": "head", "layer": "overlay", "face": "back", "y": 6, "rows": [
+      "hHhHHhHh",
+      "hhhhhhhh"
+    ] }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "lila_finch_cyber",
+    "character": "Lila Finch",
+    "title": { "en_US": "Lila Finch (Cyber Casual)", "ko_KR": "릴라 핀치 (사이버 캐주얼)" },
+    "outfit": "제니와 맞춰 입은 코트 세트의 앰버 컬러",
+    "reference": "03_Sources/3D_Models/JennySisters.png 오른쪽",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": ["lila_finch_base.dolly.json", "../jenny/jenny_cyber.dolly.json"],
+  "palette": {
+    "turtleneck": "#D9741A",
+    "gloves": "#A0501C",
+    "boot_trim": "#E0821E"
+  }
+}

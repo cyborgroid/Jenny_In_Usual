@@ -1,0 +1,119 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "jenny_casual",
+    "character": "Jenny",
+    "title": {
+      "en_US": "Jenny (Cozy Hoodie)",
+      "ko_KR": "제니 (아늑한 후드티)"
+    },
+    "outfit": "보라색 집업 후드티 + 검은 이너 + 회색 라운지 반바지 + 흰 양말 (친구들과 피자·게임하는 방 안 일상복)",
+    "reference": "03_Sources/3D_Models/JennyInUsual.jpg",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": "jenny_base.dolly.json",
+  "palette": {
+    "hoodie": "#6C3794",
+    "hoodie_dark": "hoodie*0.8",
+    "hoodie_rib": "hoodie*0.7",
+    "drawstring": "#EDE6F2",
+    "zip": "#B9B2C2",
+    "top": "#2C2430",
+    "shorts": "#9A979E",
+    "shorts_dark": "shorts*0.82",
+    "socks": "#F3F0F4",
+    "socks_shade": "socks*0.9"
+  },
+  "legend": {
+    "U": "hoodie", "u": "hoodie_dark", "r": "hoodie_rib", "w": "drawstring",
+    "Y": "zip", "A": "top", "Q": "shorts", "q": "shorts_dark",
+    "J": "socks", "j": "socks_shade"
+  },
+  "ops": [
+    { "op": "note", "text": "---- 몸통: 열린 집업 후드 사이로 검은 이너, 후드 끈, 리브 밑단, 반바지 허리 ----" },
+    { "op": "fill", "part": "body", "faces": "all", "color": "hoodie" },
+    { "op": "fill", "part": "body", "faces": "bottom", "color": "shorts" },
+    { "op": "pixels", "part": "body", "face": "front", "rows": [
+      "UUuAAuUU",
+      "UUwAAwUU",
+      "UUwAAYUU",
+      "UUwAAwUU",
+      "UUuAAwUU",
+      "UUYAAuUU",
+      "UUuAAuUU",
+      "UUuAAYUU",
+      "UUuAAuUU",
+      "rrrAArrr",
+      "QQQQQQQQ",
+      "qQQQQQQq"
+    ] },
+    { "op": "pixels", "part": "body", "face": "back", "rows": [
+      "uuuuuuuu",
+      "UuuuuuuU",
+      "UUuuuuUU",
+      "UUUuuUUU"
+    ] },
+    { "op": "band", "part": "body", "y": 9, "h": 1, "color": "hoodie_rib" },
+    { "op": "band", "part": "body", "y": 10, "h": 2, "color": "shorts" },
+    { "op": "pixels", "part": "body", "face": "top", "rows": [
+      "uuuuuuuu",
+      "UUuAAuUU",
+      "UUuAAuUU",
+      "UUuAAuUU"
+    ] },
+    { "op": "note", "text": "body overlay: 넉넉한 후드티 자락 (머리카락 영역은 base 가 이미 칠함)" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 0, "y": 5, "w": 2, "h": 4, "color": "hoodie" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 6, "y": 5, "w": 2, "h": 4, "color": "hoodie" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": ["right", "left"], "x": 0, "y": 4, "w": 4, "h": 5, "color": "hoodie" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "back", "x": 0, "y": 7, "w": 8, "h": 2, "color": "hoodie" },
+    { "op": "band", "part": "body", "layer": "overlay", "y": 9, "h": 1, "color": "hoodie_rib" },
+    { "op": "rect", "part": "body", "layer": "overlay", "face": "front", "x": 2, "y": 9, "w": 4, "h": 1, "color": "clear" },
+    { "op": "note", "text": "---- 팔: 오버핏 소매, 리브 소맷부리, 맨손 ----" },
+    { "op": "fill", "part": "arm_r", "faces": "all", "color": "hoodie" },
+    { "op": "band", "part": "arm_r", "y": 10, "h": 1, "color": "hoodie_rib" },
+    { "op": "band", "part": "arm_r", "y": 11, "h": 1, "color": "skin" },
+    { "op": "fill", "part": "arm_r", "faces": "bottom", "color": "skin" },
+    { "op": "pixels", "part": "arm_r", "face": "right", "y": 2, "rows": [
+      ".u..",
+      "..u.",
+      ".u..",
+      "..u."
+    ] },
+    { "op": "band", "part": "arm_r", "layer": "overlay", "y": 8, "h": 2, "color": "hoodie" },
+    { "op": "band", "part": "arm_r", "layer": "overlay", "y": 10, "h": 1, "color": "hoodie_rib" },
+    { "op": "mirror", "from": "arm_r", "to": "arm_l" },
+    { "op": "note", "text": "---- 다리: 회색 반바지, 맨다리, 흰 양말 ----" },
+    { "op": "fill", "part": "leg_r", "faces": "all", "color": "skin" },
+    { "op": "band", "part": "leg_r", "y": 0, "h": 3, "color": "shorts" },
+    { "op": "band", "part": "leg_r", "y": 3, "h": 1, "color": "shorts_dark" },
+    { "op": "fill", "part": "leg_r", "faces": "top", "color": "shorts" },
+    { "op": "band", "part": "leg_r", "y": 8, "h": 4, "color": "socks" },
+    { "op": "band", "part": "leg_r", "y": 11, "h": 1, "color": "socks_shade" },
+    { "op": "fill", "part": "leg_r", "faces": "bottom", "color": "socks_shade" },
+    { "op": "band", "part": "leg_r", "y": 4, "h": 1, "color": "skin_shade", "faces": ["right", "left"] },
+    { "op": "note", "text": "다리 곡선: 안쪽 그늘로 둥근 볼륨" },
+    { "op": "pixels", "part": "leg_r", "face": "front", "y": 4, "rows": [
+      "SSSs",
+      "SSSs",
+      "SSSs",
+      "SSSs"
+    ] },
+    { "op": "rect", "part": "leg_r", "face": "left", "x": 0, "y": 4, "w": 4, "h": 4, "color": "skin_shade" },
+    { "op": "pixels", "part": "leg_r", "face": "back", "y": 4, "rows": [
+      "sSSS",
+      "sSSS",
+      "sSSS",
+      "sSSS"
+    ] },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 0, "h": 3, "color": "shorts" },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 3, "h": 1, "color": "shorts_dark" },
+    { "op": "band", "part": "leg_r", "layer": "overlay", "y": 8, "h": 1, "color": "socks" },
+    { "op": "mirror", "from": "leg_r", "to": "leg_l" },
+    { "op": "note", "text": "---- 천결 질감 (기모 후드) ----" },
+    { "op": "shade", "part": "*", "amount": 0.06, "seed": 31, "only": "hoodie" },
+    { "op": "shade", "part": "*", "layer": "overlay", "amount": 0.06, "seed": 32, "only": "hoodie" },
+    { "op": "shade", "part": "*", "amount": 0.04, "seed": 33, "only": "shorts" }
+  ]
+}

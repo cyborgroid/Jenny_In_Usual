@@ -1,0 +1,82 @@
+// build.py 가 DollyForge/characters/jenny/collection.json 으로 생성한 파일. 직접 고치지 말 것.
+{
+  "id": "JennyInUsual",
+  "name": {
+    "en_US": "Jenny In Usual",
+    "ko_KR": "제니의 평범한 하루"
+  },
+  "description": "Project Haven — Jenny, Eyle Teal, Lila Finch. All-ages skins, CC BY-NC-ND 4.0",
+  "version": [
+    1,
+    1,
+    0
+  ],
+  "header_uuid": "c48b4e73-82ee-4c0e-9af9-d4374944345f",
+  "module_uuid": "5229171e-17b6-4dc2-8296-61d12e275c0e",
+  "skins": [
+    {
+      "id": "jenny_cyber",
+      "texture": "../../03_Sources/Minecraft_Skins/Jenny_Cyber_Skin.png",
+      "name": {
+        "en_US": "Jenny (Cyber Casual)",
+        "ko_KR": "제니 (사이버 캐주얼)"
+      }
+    },
+    {
+      "id": "jenny_casual",
+      "texture": "../../03_Sources/Minecraft_Skins/Jenny_Casual_Skin.png",
+      "name": {
+        "en_US": "Jenny (Cozy Hoodie)",
+        "ko_KR": "제니 (아늑한 후드티)"
+      }
+    },
+    {
+      "id": "jenny_dressup",
+      "texture": "../../03_Sources/Minecraft_Skins/Jenny_DressUp_Skin.png",
+      "name": {
+        "en_US": "Jenny (Silver Dress-Up)",
+        "ko_KR": "제니 (실버 드레스업)"
+      }
+    },
+    {
+      "id": "jenny_wedding",
+      "texture": "../../03_Sources/Minecraft_Skins/Jenny_Wedding_Skin.png",
+      "name": {
+        "en_US": "Jenny (Wedding Day)",
+        "ko_KR": "제니 (웨딩 데이)"
+      }
+    },
+    {
+      "id": "eyle_teal_cyber",
+      "texture": "../../03_Sources/Minecraft_Skins/Eyle_Teal_Cyber_Skin.png",
+      "name": {
+        "en_US": "Eyle Teal (Cyber Casual)",
+        "ko_KR": "에일 틸 (사이버 캐주얼)"
+      }
+    },
+    {
+      "id": "eyle_teal_casual",
+      "texture": "../../03_Sources/Minecraft_Skins/Eyle_Teal_Casual_Skin.png",
+      "name": {
+        "en_US": "Eyle Teal (Gamer Hoodie)",
+        "ko_KR": "에일 틸 (게이머 후드티)"
+      }
+    },
+    {
+      "id": "lila_finch_cyber",
+      "texture": "../../03_Sources/Minecraft_Skins/Lila_Finch_Cyber_Skin.png",
+      "name": {
+        "en_US": "Lila Finch (Cyber Casual)",
+        "ko_KR": "릴라 핀치 (사이버 캐주얼)"
+      }
+    },
+    {
+      "id": "lila_finch_casual",
+      "texture": "../../03_Sources/Minecraft_Skins/Lila_Finch_Casual_Skin.png",
+      "name": {
+        "en_US": "Lila Finch (Cozy Knit)",
+        "ko_KR": "릴라 핀치 (아늑한 니트)"
+      }
+    }
+  ]
+}

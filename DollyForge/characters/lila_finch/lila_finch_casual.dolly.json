@@ -1,0 +1,25 @@
+{
+  "dollyforge": 1,
+  "meta": {
+    "id": "lila_finch_casual",
+    "character": "Lila Finch",
+    "title": { "en_US": "Lila Finch (Cozy Knit)", "ko_KR": "릴라 핀치 (아늑한 니트)" },
+    "outfit": "오렌지 니트 가디건 + 검은 이너 + 회색 반바지 + 흰 양말",
+    "reference": "03_Sources/3D_Models/JennyInUsual.jpg (오른쪽, 피자를 든 인물)",
+    "author": "Project Haven — Jenny In Usual",
+    "license": "CC-BY-NC-ND-4.0",
+    "rating": "all-ages"
+  },
+  "extends": ["lila_finch_base.dolly.json", "../jenny/jenny_casual.dolly.json"],
+  "palette": {
+    "// reference": "JennyInUsual.jpg 추출값 sweater #913E1C · top #332323 (조명 보정 전)",
+    "hoodie": "#C25A26",
+    "top": "#2C2430",
+    "drawstring": "hoodie*0.8",
+    "zip": "hoodie*0.8"
+  },
+  "ops": [
+    { "op": "note", "text": "니트 결: 후드티보다 굵은 짜임" },
+    { "op": "shade", "part": "*", "amount": 0.09, "seed": 61, "only": "hoodie" }
+  ]
+}
