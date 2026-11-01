@@ -326,9 +326,18 @@ static void walker_boots(v3 q, hit *h) {
         float shaft = sd_round_cone(q, V(0.062f, 0.345f, -0.004f), V(0.061f, 0.11f, -0.006f), 0.072f, 0.068f);
         float foot = sd_round_box(sub(q, V(0.062f, 0.068f, 0.030f)), V(0.056f, 0.068f, 0.112f), 0.040f);
         float boot = smin(shaft, foot, 0.04f);
+        /* 레퍼런스 부츠: 정강이 앞의 가로 골(리브) 스트랩 */
+        if (q.z > 0.02f && q.y > 0.13f && q.y < 0.30f)
+            boot -= 0.0035f * smoothstepf(0.02f, 0.06f, q.z) * (0.5f + 0.5f * cosf(q.y * 2.0f * 3.14159f / 0.024f));
+        /* 물결 모양으로 튀어나온 두툼한 밑창 */
+        float sole = sd_round_box(sub(q, V(0.062f, 0.024f, 0.032f)), V(0.063f, 0.024f, 0.120f), 0.020f);
+        sole -= 0.003f * sinf(q.z * 70.0f);
+        boot = smin(boot, sole, 0.006f);
         float top_ring = sd_ring(q, V(0.062f, 0.338f, -0.004f), V(0, 1, 0), 0.072f, 0.013f);
         boot = smin(boot, top_ring, 0.01f);
         int bm = q.y < 0.030f ? M_SOLE : q.y < 0.048f ? M_TRIM : M_BOOT;
+        /* 밑창 옆면의 물결 트림 */
+        if (q.y < 0.060f && fabsf(q.y - (0.034f + 0.008f * sinf(q.z * 45.0f))) < 0.0055f) bm = M_TRIM;
         /* 발 옆을 따라 뒤꿈치 쪽으로 올라가는 곡선 트림 (레퍼런스 부츠 그대로) */
         if (bm == M_BOOT && q.y < 0.17f && fabsf(q.y - (0.058f + 0.38f * clampf(0.10f - q.z, 0, 0.25f))) < 0.0075f) bm = M_TRIM;
         take(h, boot, bm);
@@ -774,7 +783,7 @@ static v3 albedo(const struct df_doll *dl, v3 p, v3 n, v3 v, int m) {
     if (m == M_LEGS && (dl->outfit == OUTFIT_CYBER || dl->outfit == OUTFIT_WITCH)) {
         /* 비치는 타이츠: 정면을 향한 곳은 피부가 비쳐 밝고, 가장자리는 짙다 */
         float facing = clampf(dot(n, v), 0, 1);
-        base = mixv(base, mixv(base, dl->col[M_SKIN], 0.55f), facing * facing * 0.55f);
+        base = mixv(base, mixv(base, dl->col[M_SKIN], 0.45f), facing * facing * 0.40f);
     }
     return base;
 }
@@ -789,8 +798,8 @@ static v3 shade(const struct df_doll *dl, v3 p, v3 n, v3 v, int m) {
     float d2 = clampf(dot(n, L2), 0, 1);
     float rim = powf(1 - clampf(dot(n, v), 0, 1), 3.0f) * clampf(dot(n, L3) + 0.4f, 0, 1);
     float sky = 0.55f + 0.45f * n.y;
-    v3 light = add(add(mul(V(1.00f, 0.95f, 0.90f), 1.25f * d1), mul(V(0.55f, 0.62f, 0.85f), 0.38f * d2)),
-                   mul(V(0.42f, 0.36f, 0.50f), 0.55f * sky * ao));
+    v3 light = add(add(mul(V(1.00f, 0.93f, 0.86f), 0.95f * d1), mul(V(0.55f, 0.62f, 0.85f), 0.26f * d2)),
+                   mul(V(0.42f, 0.34f, 0.46f), 0.38f * sky * ao));
     v3 c = V(base.x * light.x, base.y * light.y, base.z * light.z);
     if (m == M_SKIN) {
         /* 피부 속 산란: 빛과 그림자 경계가 붉게 번진다 */
@@ -825,15 +834,15 @@ static v3 shade(const struct df_doll *dl, v3 p, v3 n, v3 v, int m) {
         /* Kajiya-Kay: 가닥 방향(아래로 흐름)에 수직인 띠 하이라이트 — 1차는 흰색, 2차는 머리색 */
         v3 t = nrm(sub(V(0, -1, 0), mul(n, dot(n, V(0, -1, 0)))));
         float th = dot(t, hv);
-        float s1 = powf(sqrtf(fmaxf(0, 1 - th * th)), 90) * 0.55f * dl->gloss;
+        float s1 = powf(sqrtf(fmaxf(0, 1 - th * th)), 110) * 0.28f * dl->gloss;
         v3 t2 = nrm(add(t, mul(n, 0.12f)));
         float th2 = dot(t2, hv);
-        float s2 = powf(sqrtf(fmaxf(0, 1 - th2 * th2)), 30) * 0.30f * dl->gloss;
+        float s2 = powf(sqrtf(fmaxf(0, 1 - th2 * th2)), 30) * 0.12f * dl->gloss;
         c = add(c, mul(add(V(s1, s1, s1), mul(base, s2 * 2.5f)), sh));
     }
     if (m == M_HAIR) { /* 정수리 위 윤기 띠 */
         float band = expf(-powf((p.y - 1.545f - 0.03f * n.z) / 0.020f, 2)) * clampf(n.y + 0.3f, 0, 1);
-        spec += band * 0.30f * dl->gloss;
+        spec += band * 0.14f * dl->gloss;
     }
     /* 금속성 재질: 방의 조명이 비친다 (위는 밝고, 옆은 보라·청록 네온) */
     float metal = (m == M_METAL || m == M_WAND) ? 0.45f : (m == M_BOOT && (dl->outfit == OUTFIT_DRESSUP || dl->outfit == OUTFIT_WEDDING)) ? 0.35f
@@ -894,16 +903,16 @@ static float polyline_dist(float u, float v, const float *pts, int n) {
 
 /* 네온관: 뜨거운 심 + 주변 번짐 (HDR, 블룸이 퍼뜨린다) */
 static v3 neon(float d, v3 col) {
-    float core = smoothstepf(0.0085f, 0.004f, d);
-    float glow = expf(-d / 0.035f) * 0.55f;
-    return mul(col, core * 5.0f + glow);
+    float core = smoothstepf(0.0060f, 0.0025f, d);
+    float glow = expf(-d / 0.025f) * 0.35f;
+    return mul(col, core * 6.0f + glow);
 }
 
 static v3 wood(float u, float v, float board_w, int vertical, float seed) {
     float along = vertical ? v : u, across = vertical ? u : v;
     float id = floorf(across / board_w);
     float h = hash2(id, seed);
-    v3 base = mixv(V(0.20f, 0.075f, 0.030f), V(0.34f, 0.14f, 0.060f), h);
+    v3 base = mixv(V(0.16f, 0.050f, 0.022f), V(0.30f, 0.105f, 0.045f), h);
     float grain = 0.5f + 0.5f * sinf(across * 260 + sinf(along * 2.3f + h * 9) * 3.5f + h * 40);
     grain *= 0.5f + 0.5f * sinf(across * 61 + along * 0.7f + h * 13);
     base = mul(base, 0.78f + 0.30f * grain);
@@ -914,7 +923,7 @@ static v3 wood(float u, float v, float board_w, int vertical, float seed) {
 
 static v3 back_wall(float u, float v) {
     v3 c = wood(u, v, 0.30f, 1, 7);
-    float light = 0.32f + 0.25f * smoothstepf(0.4f, 2.4f, v);
+    float light = 0.20f + 0.16f * smoothstepf(0.4f, 2.4f, v);
     /* 아래 수납장: 문짝 테두리 + 위 선반 */
     if (v < 0.92f) {
         float du = fmodf(u + 10.0f, 0.62f), inset = fminf(fminf(du, 0.62f - du), fminf(v - 0.06f, 0.86f - v));
@@ -970,7 +979,7 @@ static v3 back_wall(float u, float v) {
 }
 
 static v3 side_wall(float u, float v, float side) {
-    v3 c = mul(wood(u, v, 0.30f, 1, side > 0 ? 3 : 5), 0.26f + 0.18f * smoothstepf(0.4f, 2.4f, v));
+    v3 c = mul(wood(u, v, 0.30f, 1, side > 0 ? 3 : 5), 0.16f + 0.12f * smoothstepf(0.4f, 2.4f, v));
     static const float strip[] = { -0.55f, 0.45f, -0.55f, 2.70f };
     c = add(c, neon(polyline_dist(u, v, strip, 2), V(0.20f, 0.95f, 1.00f)));
     return c;
@@ -1001,7 +1010,7 @@ static v3 room_color(const struct df_doll *dl, v3 ro, v3 rd, int depth) {
     float zz = p.z + hash1(id) * 1.3f;
     v3 c = wood(p.x, zz, plank, 0, 2);
     if (fmodf(zz + 20, 1.3f) < 0.012f) c = mul(c, 0.5f); /* 판자 끝 이음 */
-    float light = 0.30f;
+    float light = 0.24f;
     /* 네온이 바닥에 떨어진 색 웅덩이 */
     v3 pool = add(mul(V(1.0f, 0.3f, 0.95f), 0.22f * expf(-((p.x - 0.9f) * (p.x - 0.9f) + (p.z - ROOM_BACK) * (p.z - ROOM_BACK)) / 0.5f)),
                   mul(V(0.2f, 0.9f, 1.0f), 0.18f * expf(-((p.x + 1.0f) * (p.x + 1.0f) + (p.z - ROOM_BACK) * (p.z - ROOM_BACK)) / 0.6f)));
@@ -1165,7 +1174,7 @@ int df_doll_render(const df_doll *dl, int w, int h, double yaw_deg, double pitch
     float half = top * 0.5f + 0.10f;
     v3 target = V(0, mixf(top * 0.5f, 1.42f, clampf((z - 1) / 2.5f, 0, 1)), 0);
     /* 레퍼런스처럼 가깝고 낮은 카메라 — 원근이 살아 다리가 길고 발이 크게 보인다 */
-    float dist = 3.3f;
+    float dist = 2.55f;
     v3 cam = add(target, V(-sinf(yaw) * cosf(pitch) * dist, sinf(pitch) * dist, cosf(yaw) * cosf(pitch) * dist));
     render_job base;
     base.dl = dl; base.w = w; base.h = h;
@@ -1201,7 +1210,7 @@ int df_doll_render(const df_doll *dl, int w, int h, double yaw_deg, double pitch
                 float dx = (x + 0.5f) / w - 0.5f, dy = (y + 0.5f) / h - 0.5f;
                 vig = 1 - 0.32f * (dx * dx + dy * dy) * 2.2f;
             }
-            for (int c = 0; c < 3; c++) o[c] = (uint8_t)(lin_to_srgb(aces(px[c] * 1.15f * vig)) * 255 + 0.5f);
+            for (int c = 0; c < 3; c++) o[c] = (uint8_t)(lin_to_srgb(aces(px[c] * 0.82f * vig)) * 255 + 0.5f);
             o[3] = (uint8_t)(clampf(px[3], 0, 1) * 255 + 0.5f);
         }
     free(base.hdr);

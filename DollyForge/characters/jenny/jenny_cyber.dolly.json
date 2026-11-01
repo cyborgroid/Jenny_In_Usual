@@ -43,6 +43,9 @@
   "doll": {
     "outfit": {
       "type": "cyber"
+    },
+    "prompt": {
+      "outfit": "purple turtleneck, black open long coat with silver square buckle belt and silver buckled sleeve straps, black gloves, sheer dark brown tights, chunky black combat platform boots with purple trim and silver buckles"
     }
   },
   "ops": [

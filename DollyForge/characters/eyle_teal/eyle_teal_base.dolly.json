@@ -26,7 +26,11 @@
     "flower": {
       "side": "left"
     },
-    "pose": "stand"
+    "pose": "stand",
+    "prompt": {
+      "character": "stylized 3D animated adult woman in her twenties with a mature face and graceful curvy figure Eyle Teal, chin-length auburn bob haircut, blue daisy flower hairpin, big almond blue eyes with long eyelashes, rosy cheeks, soft smile",
+      "pose": "standing relaxed with arms down"
+    }
   },
   "ops": [
     { "op": "note", "text": "---- 꽃핀을 보는 사람 기준 오른쪽(캐릭터 왼쪽)으로 — 레퍼런스 위치 그대로 ----" },

@@ -31,6 +31,9 @@
   "doll": {
     "outfit": {
       "type": "wedding"
+    },
+    "prompt": {
+      "outfit": "elegant white satin wedding gown with lavender lace embroidered bodice, long sleeves, high-low skirt with flowing silver-lavender swirl embroidery, sheer veil, silver ankle boots, purple clutch bag"
     }
   },
   "ops": [

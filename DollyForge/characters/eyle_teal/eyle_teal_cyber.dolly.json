@@ -3,7 +3,10 @@
   "meta": {
     "id": "eyle_teal_cyber",
     "character": "Eyle Teal",
-    "title": { "en_US": "Eyle Teal (Cyber Casual)", "ko_KR": "에일 틸 (사이버 캐주얼)" },
+    "title": {
+      "en_US": "Eyle Teal (Cyber Casual)",
+      "ko_KR": "에일 틸 (사이버 캐주얼)"
+    },
     "outfit": "제니와 맞춰 입은 코트 세트의 틸 컬러",
     "reference": "03_Sources/3D_Models/JennySisters.png 왼쪽",
     "author": "Project Haven — Jenny In Usual",
@@ -15,5 +18,10 @@
     "turtleneck": "#1A8FB0",
     "gloves": "#22262C",
     "boot_trim": "#1FA3B8"
+  },
+  "doll": {
+    "prompt": {
+      "outfit": "teal turtleneck, black open coat with silver buckle belt and sleeve straps, black gloves, sheer dark brown tights, chunky black combat platform boots with teal trim"
+    }
   }
 }

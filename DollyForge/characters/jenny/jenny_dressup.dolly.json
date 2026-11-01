@@ -33,6 +33,9 @@
   "doll": {
     "outfit": {
       "type": "dressup"
+    },
+    "prompt": {
+      "outfit": "metallic silver snakeskin-textured cropped blazer and fitted silver knit midi dress, purple snakeskin clutch bag, silver ankle boots"
     }
   },
   "ops": [

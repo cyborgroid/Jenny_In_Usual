@@ -96,6 +96,32 @@ Figura 형식은 Figura 소스([FiguraMC/Figura](https://github.com/FiguraMC/Fig
 
 게임 안 실행 확인은 이 환경에서 하지 못했습니다.
 
+## 렌더러와 AI 마감 — 레퍼런스 이미지 수준으로
+
+![AI 마감](../05_Distribution/previews/Lineup_AI.png)
+
+**엔진 렌더 (`dolly-forge sculpt`, C 코어)**
+- 레퍼런스와 같은 스튜디오 세트: 원목 판자 벽과 수납장, 검은 회로 기판 패널과 청록 네온 회로선,
+  보라 네온 띠가 두른 야경 창(빌딩 실루엣·불 켜진 창), 광택 원목 바닥(캐릭터·네온 반사, 프레넬, 발밑 접촉 그림자)
+- HDR 버퍼 → 블룸(1/4 해상도 가우시안) → 비네트 → ACES 톤매핑 → sRGB
+- 낮고 가까운 광각 카메라 — 다리가 길고 부츠가 크게 보이는 레퍼런스 원근
+- 600×900 고화질(2×2 슈퍼샘플) 약 1.4초
+
+**AI 마감 (`python/tools/ai_finish.py`, 로컬 ComfyUI + FLUX.1 [schnell])**
+- 엔진 렌더(832×1248)를 구도·디자인의 기준으로 넣고 img2img 로 질감과 디테일만 입힌다.
+  기본 강도 0.72 — 포즈·의상 형태·팔레트·버클 위치는 엔진 그대로, 천 주름·라펠·손가락·금속 장식·피부 질감이 더해진다.
+  (0.5 는 거의 안 바뀌고, 0.85 부터는 포즈가 바뀌고 없는 소품이 생겨 디자인을 벗어난다.)
+- 프롬프트는 레시피 `doll.prompt` 의 `character` / `outfit` / `pose` 슬롯을 extends 체인으로 합친 것 +
+  고정 조건 "adult, fully clothed, modest outfit, wholesome, all ages". 시드는 레시피 이름에서 고정 → 같은 입력이면 같은 결과.
+- GPU 에서 렌더당 약 15초. 서버가 꺼져 있으면 띄우고 끝나면 끈다.
+
+```bash
+python3 DollyForge/python/tools/ai_finish.py DollyForge/characters/jenny/jenny_cyber.dolly.json -o jenny_ai.png
+python3 DollyForge/build.py --ai          # 9종 전부 + Lineup_AI.png
+```
+
+Studio 의 "AI 마감 렌더" 버튼은 지금 메이크업 상태 그대로를 마감한다.
+
 ## 빌드
 
 필요한 것: CMake 3.16+, C/C++ 컴파일러, JDK 17+, Python 3.10+ (Pillow), Rust (cargo), .NET 10 SDK.
@@ -113,6 +139,7 @@ python3 DollyForge/build.py --no-studio
 | 게임 적용 규격 스킨 PNG (64×64, slim) | `03_Sources/Minecraft_Skins/Jenny_*_Skin.png` |
 | 레퍼런스 렌더에서 뽑은 팔레트 | `01_Concepts/reference_palette.json/.png` |
 | 곡선 3D 렌더 (전신·얼굴) · 3D 라인업 | `05_Distribution/previews/3D/`, `previews/Lineup_3D.png` |
+| AI 마감 렌더 (`--ai`) · AI 라인업 | `05_Distribution/previews/ai/`, `previews/Lineup_AI.png` |
 | 스킨 3D 미리보기 · 라인업 · Studio 스크린샷 | `05_Distribution/previews/` |
 | Bedrock 스킨팩 | `05_Distribution/bedrock/JennyInUsual.mcpack` |
 | 무결성 서명 | `05_Distribution/integrity.json` |

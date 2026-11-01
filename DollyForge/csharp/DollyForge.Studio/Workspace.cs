@@ -41,6 +41,7 @@ internal static class Workspace
         var dir = Path.Combine(Home, "characters");
         if (!Directory.Exists(dir)) return new();
         return Directory.GetFiles(dir, "*.dolly.json", SearchOption.AllDirectories)
+            .Where(p => !Path.GetFileName(p).StartsWith('.'))   /* .studio_* 임시 레시피 제외 */
             .Where(p => Load(p)["meta"]?["abstract"]?.GetValue<bool>() != true)
             .OrderBy(p => p, StringComparer.Ordinal)
             .ToList();

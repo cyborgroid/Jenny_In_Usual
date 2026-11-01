@@ -132,6 +132,7 @@ internal sealed class MainWindow : Window
         actions.Children.Add(Button("스킨 PNG 저장…", SaveSkinAsync));
         actions.Children.Add(Button("3D 렌더 PNG 저장…", SaveRenderAsync));
         actions.Children.Add(Button("3D 메시 내보내기 (OBJ)…", ExportObjAsync));
+        actions.Children.Add(Button("AI 마감 렌더 (로컬 FLUX)", AiFinishAsync));
         actions.Children.Add(Button("메이크업 되돌리기", () => { _overrides.Clear(); _makeup.Clear(); Open(_recipe!); return Task.CompletedTask; }));
         actions.Children.Add(new Separator { Margin = new Thickness(0, 6) });
         actions.Children.Add(new TextBlock { Text = "메이크업 변형으로 저장", FontWeight = FontWeight.SemiBold, Foreground = Ink });
@@ -390,6 +391,42 @@ internal sealed class MainWindow : Window
     }
 
     // ---- 저장 ----
+
+    /// <summary>현재 메이크업을 임시 레시피로 써서 python/tools/ai_finish.py 를 돌린다 (로컬 ComfyUI · GPU)</summary>
+    private async Task AiFinishAsync()
+    {
+        if (_recipe == null) return;
+        var dir = Path.GetDirectoryName(_recipe)!;
+        var tmp = Path.Combine(dir, ".studio_ai.dolly.json");
+        var id = Workspace.Load(_recipe)["meta"]?["id"]?.GetValue<string>() ?? "doll";
+        var outDir = Path.Combine(Workspace.Home, "build", "studio");
+        Directory.CreateDirectory(outDir);
+        var output = Path.Combine(outDir, id + "_ai.png");
+        File.WriteAllText(tmp, VariantJson());
+        _status.Text = "AI 마감 렌더 중… (처음에는 모델을 올리느라 30초 이상 걸립니다)";
+        try
+        {
+            var psi = new System.Diagnostics.ProcessStartInfo("python3")
+            {
+                RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false,
+            };
+            psi.ArgumentList.Add(Path.Combine(Workspace.Home, "python", "tools", "ai_finish.py"));
+            psi.ArgumentList.Add(tmp);
+            psi.ArgumentList.Add("-o");
+            psi.ArgumentList.Add(output);
+            psi.ArgumentList.Add("--keep-server");
+            using var proc = System.Diagnostics.Process.Start(psi)!;
+            var err = await proc.StandardError.ReadToEndAsync();
+            await proc.WaitForExitAsync();
+            if (proc.ExitCode != 0) throw new InvalidOperationException("AI 마감 실패: " + err.Trim().Split('\n').LastOrDefault());
+            _doll.Source = new Bitmap(output);
+            _status.Text = "AI 마감: " + output;
+        }
+        finally
+        {
+            File.Delete(tmp);
+        }
+    }
 
     private async Task ExportObjAsync()
     {

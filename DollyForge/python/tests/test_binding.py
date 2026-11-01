@@ -76,6 +76,20 @@ class DollTests(unittest.TestCase):
         self.assertLess(max(diff), 180 * 0.25)               # 바뀐 픽셀은 머리 높이 안에만
 
 
+class AiPromptTests(unittest.TestCase):
+    def test_prompt_slots_follow_extends_like_palette(self):
+        sys.path.insert(0, os.path.join(HERE, "..", "tools"))
+        import ai_finish
+        eyle = ai_finish.prompt_for(os.path.join(ROOT, "characters", "eyle_teal", "eyle_teal_cyber.dolly.json"))
+        self.assertIn("auburn bob", eyle)
+        self.assertIn("teal turtleneck", eyle)
+        self.assertNotIn("long straight", eyle)          # 제니 얼굴 설명이 섞이지 않는다
+        self.assertIn("all ages", eyle)
+        jenny = ai_finish.prompt_for(os.path.join(ROOT, "characters", "jenny", "jenny_witch.dolly.json"))
+        self.assertIn("witch hat", jenny)
+        self.assertIn("index finger pointing up", jenny)
+
+
 class ExportTests(unittest.TestCase):
     def test_obj_mesh_is_closed_and_outward(self):
         d = df.doll(os.path.join(ROOT, "characters", "jenny", "jenny_cyber.dolly.json"))

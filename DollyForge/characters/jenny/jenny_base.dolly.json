@@ -58,7 +58,11 @@
       "lip_curve": 1,
       "gloss": 1
     },
-    "pose": "point"
+    "pose": "point",
+    "prompt": {
+      "character": "stylized 3D animated adult woman in her twenties with a mature face and graceful curvy figure Jenny, long straight glossy light brown hair with a side part, large purple daisy flower hairpin, big almond magenta-pink eyes with long dark eyelashes, rosy blushing cheeks, gentle confident smile",
+      "pose": "raising her right hand with index finger pointing up"
+    }
   },
   "ops": [
     { "op": "note", "text": "---- 머리: 긴 갈색 머리, 옆으로 넘긴 앞머리, 보라 꽃핀 ----" },

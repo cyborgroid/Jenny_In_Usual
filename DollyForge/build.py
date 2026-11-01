@@ -86,6 +86,7 @@ def recipe_path(entry):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--no-studio", action="store_true", help="C# Studio 빌드를 건너뜀")
+    ap.add_argument("--ai", action="store_true", help="로컬 ComfyUI(FLUX)로 AI 마감 렌더까지 (GPU 필요)")
     args = ap.parse_args()
 
     step("C core + C++ CLI (CMake)")
@@ -174,6 +175,18 @@ def main():
         json.dump(pack, f, ensure_ascii=False, indent=2)
         f.write("\n")
     run(cli, "pack-bedrock", pack_json, "-o", os.path.join(bedrock, col["id"] + ".mcpack"))
+
+    if args.ai:
+        step("Python: AI 마감 렌더 (로컬 ComfyUI · FLUX img2img, 05_Distribution/previews/ai)")
+        sys.path.insert(0, os.path.join(HOME, "python", "tools"))
+        sys.path.insert(0, os.path.join(HOME, "python"))
+        import ai_finish
+        ai_dir = os.path.join(previews, "ai")
+        os.makedirs(ai_dir, exist_ok=True)
+        jobs = [(recipe_path(s), os.path.join(ai_dir, s["file"].replace("_Skin.png", "_AI.png"))) for s in col["skins"]]
+        ai_finish.finish(jobs, log_path=os.path.join(BUILD, "comfyui.log"))
+        titles_ai = [(out, load_json(rp)["meta"]["title"]["en_US"]) for rp, out in jobs]
+        lineup_3d(titles_ai, os.path.join(previews, "Lineup_AI.png"))
 
     step("Python: 바인딩 + 레시피 회귀 테스트")
     run(sys.executable, "-m", "unittest", "discover", "-s", "python/tests")

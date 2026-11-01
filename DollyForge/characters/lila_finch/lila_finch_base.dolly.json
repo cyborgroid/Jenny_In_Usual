@@ -25,7 +25,11 @@
     "flower": {
       "side": "left"
     },
-    "pose": "stand"
+    "pose": "stand",
+    "prompt": {
+      "character": "stylized 3D animated adult woman in her twenties with a mature face and graceful curvy figure Lila Finch, shoulder-length wavy light brown hair, red daisy flower hairpin, big almond amber-orange eyes with long eyelashes, rosy cheeks, confident smile",
+      "pose": "standing relaxed with arms down"
+    }
   },
   "ops": [
     { "op": "note", "text": "---- 꽃핀을 보는 사람 기준 오른쪽으로 — 레퍼런스 위치 그대로 ----" },
