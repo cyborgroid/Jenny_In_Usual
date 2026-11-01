@@ -853,8 +853,7 @@ static v3 shade(const struct df_doll *dl, v3 p, v3 n, v3 v, int m) {
 
 /* ---------------- 렌더 ---------------- */
 
-static inline float to_srgb(float x) {
-    x = x / (1 + 0.35f * x) * 1.12f; /* 부드러운 톤매핑 */
+static inline float lin_to_srgb(float x) {
     x = clampf(x, 0, 1);
     return x <= 0.0031308f ? 12.92f * x : 1.055f * powf(x, 1 / 2.4f) - 0.055f;
 }
@@ -864,100 +863,298 @@ static inline float to_linear(uint8_t c) {
     return x <= 0.04045f ? x / 12.92f : powf((x + 0.055f) / 1.055f, 2.4f);
 }
 
+/* ACES 근사 (Narkowicz) — 네온처럼 밝은 값도 부드럽게 접힌다 */
+static inline float aces(float x) {
+    return clampf((x * (2.51f * x + 0.03f)) / (x * (2.43f * x + 0.59f) + 0.14f), 0, 1);
+}
+
+/* ---------------- 스튜디오 세트: 레퍼런스의 원목 방 ----------------
+ * 원목 판자 벽과 아래 수납장, 왼쪽 검은 회로 기판 패널과 청록 네온 회로선,
+ * 오른쪽 야경 창과 보라 네온 틀, 광택 원목 바닥. 평면 교차로 계산한다. */
+
+#define ROOM_BACK (-1.45f)
+#define ROOM_SIDE 1.95f
+#define ROOM_TOP 2.85f
+
+static float hash1(float x) { float s = sinf(x * 127.1f + 3.7f) * 43758.5453f; return s - floorf(s); }
+static float hash2(float x, float y) { float s = sinf(x * 127.1f + y * 311.7f) * 43758.5453f; return s - floorf(s); }
+
+/* 2D 점에서 꺾은선까지의 거리 */
+static float polyline_dist(float u, float v, const float *pts, int n) {
+    float best = 1e9f;
+    for (int i = 0; i + 1 < n; i++) {
+        float ax = pts[i * 2], ay = pts[i * 2 + 1], bx = pts[i * 2 + 2], by = pts[i * 2 + 3];
+        float dx = bx - ax, dy = by - ay, l2 = dx * dx + dy * dy;
+        float t = l2 > 0 ? clampf(((u - ax) * dx + (v - ay) * dy) / l2, 0, 1) : 0;
+        float ex = u - ax - t * dx, ey = v - ay - t * dy;
+        best = fminf(best, sqrtf(ex * ex + ey * ey));
+    }
+    return best;
+}
+
+/* 네온관: 뜨거운 심 + 주변 번짐 (HDR, 블룸이 퍼뜨린다) */
+static v3 neon(float d, v3 col) {
+    float core = smoothstepf(0.0085f, 0.004f, d);
+    float glow = expf(-d / 0.035f) * 0.55f;
+    return mul(col, core * 5.0f + glow);
+}
+
+static v3 wood(float u, float v, float board_w, int vertical, float seed) {
+    float along = vertical ? v : u, across = vertical ? u : v;
+    float id = floorf(across / board_w);
+    float h = hash2(id, seed);
+    v3 base = mixv(V(0.20f, 0.075f, 0.030f), V(0.34f, 0.14f, 0.060f), h);
+    float grain = 0.5f + 0.5f * sinf(across * 260 + sinf(along * 2.3f + h * 9) * 3.5f + h * 40);
+    grain *= 0.5f + 0.5f * sinf(across * 61 + along * 0.7f + h * 13);
+    base = mul(base, 0.78f + 0.30f * grain);
+    float f = across / board_w - id;
+    if (f < 0.03f || f > 0.97f) base = mul(base, 0.45f); /* 판자 사이 홈 */
+    return base;
+}
+
+static v3 back_wall(float u, float v) {
+    v3 c = wood(u, v, 0.30f, 1, 7);
+    float light = 0.32f + 0.25f * smoothstepf(0.4f, 2.4f, v);
+    /* 아래 수납장: 문짝 테두리 + 위 선반 */
+    if (v < 0.92f) {
+        float du = fmodf(u + 10.0f, 0.62f), inset = fminf(fminf(du, 0.62f - du), fminf(v - 0.06f, 0.86f - v));
+        if (inset > 0 && inset < 0.025f) c = mul(c, 0.55f);
+        if (v < 0.06f) c = mul(c, 0.35f);
+    } else if (v < 0.99f) {
+        c = mul(c, 1.25f);
+        if (v < 0.935f) c = mul(c, 0.5f);
+    }
+    c = mul(c, light);
+    /* 왼쪽 회로 기판 패널 */
+    if (u > -1.62f && u < -0.47f && v > 1.0f && v < 2.85f) {
+        float gx = floorf(u / 0.045f), gy = floorf(v / 0.045f);
+        float r = hash2(gx, gy);
+        c = V(0.010f, 0.011f, 0.013f);
+        float fu = u / 0.045f - gx, fv = v / 0.045f - gy;
+        if (r > 0.55f && fabsf(fv - 0.5f) < 0.06f) c = V(0.045f, 0.050f, 0.055f);  /* 가로 배선 */
+        if (r < 0.30f && fabsf(fu - 0.5f) < 0.06f) c = V(0.045f, 0.050f, 0.055f);  /* 세로 배선 */
+        float cx = floorf(u / 0.16f), cy = floorf(v / 0.13f);
+        if (hash2(cx, cy + 9) > 0.78f && fmodf(u + 10, 0.16f) > 0.03f && fmodf(v + 10, 0.13f) > 0.04f) c = V(0.025f, 0.025f, 0.03f); /* 칩 */
+        if (fabsf(u + 0.47f) < 0.012f || fabsf(u + 1.62f) < 0.012f) c = V(0.06f, 0.06f, 0.07f);
+    }
+    /* 오른쪽 야경 창 */
+    if (u > 0.36f && u < 1.48f && v > 1.00f && v < 1.76f) {
+        float sky_t = (v - 1.0f) / 0.76f;
+        c = mixv(V(0.010f, 0.020f, 0.050f), V(0.040f, 0.070f, 0.170f), sky_t);
+        float col = floorf((u - 0.36f) / 0.052f);
+        float hb = 1.06f + 0.30f * powf(hash1(col), 1.6f) + (hash1(col + 40) > 0.85f ? 0.22f : 0);
+        float cu = (u - 0.36f) / 0.052f - col;
+        float spire = hb + 0.10f * fmaxf(0, 0.5f - fabsf(cu - 0.5f)) * (hash1(col + 7) > 0.6f ? 1 : 0);
+        if (v < spire) {
+            c = V(0.012f, 0.018f, 0.040f);
+            float wx = floorf(u / 0.0105f), wy = floorf(v / 0.016f);
+            if (v < hb && hash2(wx, wy) > 0.72f && fmodf(u, 0.0105f) > 0.003f && fmodf(v, 0.016f) > 0.006f)
+                c = hash2(wx + 3, wy) > 0.5f ? V(0.55f, 0.65f, 1.0f) : V(1.0f, 0.75f, 0.45f);
+        }
+        c = add(mul(c, 0.9f), mul(V(0.05f, 0.09f, 0.20f), 0.15f * (1 - fabsf(u - 0.9f) * 1.5f))); /* 유리 반사 */
+        if (u < 0.385f || u > 1.455f || v < 1.025f || v > 1.735f) c = V(0.04f, 0.035f, 0.04f);  /* 창틀 */
+    }
+    /* 네온: 회로 패널의 청록 선, 창 위아래의 보라 띠, 오른쪽 위 청록 선 */
+    static const float cyan1[] = { -0.47f, 2.85f, -0.47f, 1.58f, -0.66f, 1.40f, -0.66f, 0.99f };
+    static const float cyan2[] = { -1.62f, 1.18f, -0.98f, 1.18f, -0.86f, 1.06f };
+    static const float cyan3[] = { 1.62f, 2.85f, 1.62f, 2.02f, 1.40f, 1.86f };
+    static const float mag1[] = { 0.30f, 1.79f, 1.95f, 1.79f };
+    static const float mag2[] = { 0.30f, 0.965f, 1.95f, 0.965f };
+    v3 cyan = V(0.20f, 0.95f, 1.00f), mag = V(1.00f, 0.30f, 0.95f);
+    c = add(c, neon(polyline_dist(u, v, cyan1, 4), cyan));
+    c = add(c, neon(polyline_dist(u, v, cyan2, 3), cyan));
+    c = add(c, neon(polyline_dist(u, v, cyan3, 3), cyan));
+    c = add(c, neon(polyline_dist(u, v, mag1, 2), mag));
+    c = add(c, neon(polyline_dist(u, v, mag2, 2), mag));
+    return c;
+}
+
+static v3 side_wall(float u, float v, float side) {
+    v3 c = mul(wood(u, v, 0.30f, 1, side > 0 ? 3 : 5), 0.26f + 0.18f * smoothstepf(0.4f, 2.4f, v));
+    static const float strip[] = { -0.55f, 0.45f, -0.55f, 2.70f };
+    c = add(c, neon(polyline_dist(u, v, strip, 2), V(0.20f, 0.95f, 1.00f)));
+    return c;
+}
+
+static float trace_doll(const struct df_doll *dl, v3 ro, v3 rd, float tmax, hit *out);
+
+/* 방의 색 (선형 HDR). depth 0 일 때만 바닥 반사를 추적한다 */
+static v3 room_color(const struct df_doll *dl, v3 ro, v3 rd, int depth) {
+    float t = 1e9f;
+    int which = -1;
+    if (rd.y < 0) { float tt = -ro.y / rd.y; if (tt > 0 && tt < t) { t = tt; which = 0; } }
+    if (rd.z < 0) { float tt = (ROOM_BACK - ro.z) / rd.z; if (tt > 0 && tt < t) { t = tt; which = 1; } }
+    if (rd.x < 0) { float tt = (-ROOM_SIDE - ro.x) / rd.x; if (tt > 0 && tt < t) { t = tt; which = 2; } }
+    if (rd.x > 0) { float tt = (ROOM_SIDE - ro.x) / rd.x; if (tt > 0 && tt < t) { t = tt; which = 3; } }
+    if (rd.y > 0) { float tt = (ROOM_TOP - ro.y) / rd.y; if (tt > 0 && tt < t) { t = tt; which = 4; } }
+    if (which < 0) return V(0.01f, 0.008f, 0.012f);
+    v3 p = add(ro, mul(rd, t));
+    switch (which) {
+    case 1: return back_wall(p.x, p.y);
+    case 2: return side_wall(p.z, p.y, -1);
+    case 3: return side_wall(-p.z, p.y, 1);
+    case 4: return mul(wood(p.x, p.z, 0.22f, 0, 11), 0.10f);
+    default: break;
+    }
+    /* 광택 원목 바닥 */
+    float plank = 0.17f, id = floorf(p.x / plank);
+    float zz = p.z + hash1(id) * 1.3f;
+    v3 c = wood(p.x, zz, plank, 0, 2);
+    if (fmodf(zz + 20, 1.3f) < 0.012f) c = mul(c, 0.5f); /* 판자 끝 이음 */
+    float light = 0.30f;
+    /* 네온이 바닥에 떨어진 색 웅덩이 */
+    v3 pool = add(mul(V(1.0f, 0.3f, 0.95f), 0.22f * expf(-((p.x - 0.9f) * (p.x - 0.9f) + (p.z - ROOM_BACK) * (p.z - ROOM_BACK)) / 0.5f)),
+                  mul(V(0.2f, 0.9f, 1.0f), 0.18f * expf(-((p.x + 1.0f) * (p.x + 1.0f) + (p.z - ROOM_BACK) * (p.z - ROOM_BACK)) / 0.6f)));
+    /* 캐릭터 발밑 그림자 */
+    float sh = 1, ao = 1;
+    if (fabsf(p.x) < 1.2f && fabsf(p.z) < 1.2f) {
+        v3 L1 = nrm(V(-0.42f, 0.70f, 0.58f));
+        sh = 0.35f + 0.65f * soft_shadow(dl, add(p, V(0, 0.002f, 0)), L1);
+        float d = mapd(dl, add(p, V(0, 0.03f, 0)));
+        ao = clampf(0.35f + d * 4.5f, 0.35f, 1.0f);
+    }
+    c = add(mul(c, light * sh * ao), V(c.x * pool.x, c.y * pool.y, c.z * pool.z));
+    if (depth == 0) {
+        /* 반사: 캐릭터와 방이 비친다 (프레넬) */
+        float cosv = fabsf(rd.y);
+        float fres = 0.10f + 0.70f * powf(1 - cosv, 5);
+        v3 rr = V(rd.x, -rd.y, rd.z);
+        hit hh;
+        v3 refl;
+        float th = trace_doll(dl, p, rr, 3.0f, &hh);
+        if (th > 0) {
+            v3 q = add(p, mul(rr, th));
+            refl = mul(albedo(dl, q, normal_at(dl, q), mul(rr, -1), hh.m), 0.55f);
+        } else refl = room_color(dl, p, rr, 1);
+        c = add(c, mul(refl, fres * ao));
+    }
+    return c;
+}
+
 typedef struct {
     const struct df_doll *dl;
     int w, h, ss, background, row0, step;
     v3 cam, fwd, right, up;
     float tan_half;
-    uint8_t *out;
+    float *hdr;     /* 선형 RGB + 덮임 비율 */
 } render_job;
 
-static void background_color(const render_job *j, float sx, float sy, float out[4]) {
-    if (!j->background) { out[0] = out[1] = out[2] = out[3] = 0; return; }
-    float t = sy;
-    v3 top = V(0.10f, 0.07f, 0.12f), bottom = V(0.20f, 0.12f, 0.12f);
-    v3 c = mixv(top, bottom, t);
-    /* 발밑 그림자 */
-    float dx = (sx - 0.5f) * 2.2f, dy = (sy - 0.93f) * 12;
-    c = mul(c, 1 - 0.55f * expf(-(dx * dx + dy * dy)));
-    out[0] = c.x; out[1] = c.y; out[2] = c.z; out[3] = 1;
+/* 캐릭터를 감싸는 상자 안에서만 레이마칭. 맞으면 거리, 아니면 -1 */
+static float trace_doll(const struct df_doll *dl, v3 ro, v3 rd, float tmax, hit *out) {
+    float t0 = 0, t1 = tmax;
+    const float bmin[3] = { -0.40f, -0.01f, -0.34f }, bmax[3] = { 0.40f, dl->top + 0.04f, 0.34f };
+    const float o[3] = { ro.x, ro.y, ro.z }, d[3] = { rd.x, rd.y, rd.z };
+    for (int a = 0; a < 3; a++) {
+        float inv = 1.0f / (fabsf(d[a]) > 1e-9f ? d[a] : 1e-9f), ta = (bmin[a] - o[a]) * inv, tb = (bmax[a] - o[a]) * inv;
+        if (ta > tb) { float tmp = ta; ta = tb; tb = tmp; }
+        t0 = fmaxf(t0, ta); t1 = fminf(t1, tb);
+    }
+    if (t0 >= t1) return -1;
+    float t = t0 + 0.002f;
+    for (int i = 0; i < 220 && t < t1; i++) {
+        hit hh = map(dl, add(ro, mul(rd, t)));
+        if (hh.d < 0.0004f * (1 + t * 0.2f)) { *out = hh; return t; }
+        t += hh.d * 0.72f;
+    }
+    return -1;
 }
 
 static void trace_pixel(const render_job *j, float px, float py, float acc[4]) {
     float sx = (2 * px / j->w - 1) * j->tan_half * j->w / j->h, sy = (1 - 2 * py / j->h) * j->tan_half;
     v3 rd = nrm(add(add(j->fwd, mul(j->right, sx)), mul(j->up, sy)));
     v3 ro = j->cam;
-    /* 캐릭터를 감싸는 상자와 교차 구간만 진행 */
-    float t0 = 0, t1 = 20;
-    const float bmin[3] = { -0.40f, -0.01f, -0.32f }, bmax[3] = { 0.40f, j->dl->top + 0.04f, 0.32f };
-    const float o[3] = { ro.x, ro.y, ro.z }, d[3] = { rd.x, rd.y, rd.z };
-    for (int a = 0; a < 3; a++) {
-        float inv = 1.0f / d[a], ta = (bmin[a] - o[a]) * inv, tb = (bmax[a] - o[a]) * inv;
-        if (ta > tb) { float tmp = ta; ta = tb; tb = tmp; }
-        t0 = fmaxf(t0, ta); t1 = fminf(t1, tb);
-    }
-    float bg[4];
-    background_color(j, px / j->w, py / j->h, bg);
-    if (t0 < t1) {
-        float t = t0;
-        for (int i = 0; i < 220 && t < t1; i++) {
-            v3 p = add(ro, mul(rd, t));
-            hit hh = map(j->dl, p);
-            if (hh.d < 0.0004f * (1 + t * 0.2f)) {
-                v3 n = normal_at(j->dl, p);
-                v3 c = shade(j->dl, p, n, mul(rd, -1), hh.m);
-                if (hh.m == M_VEIL && j->dl->noveil) {
-                    /* 베일은 45% 만 덮는다: 베일을 뺀 사본으로 뒤를 마저 그려 섞는다 */
-                    const struct df_doll *nv = j->dl->noveil;
-                    float tv = t + 0.006f;
-                    int got = 0;
-                    v3 cb = V(0, 0, 0);
-                    for (int s2 = 0; s2 < 200 && tv < t1; s2++) {
-                        v3 p2 = add(ro, mul(rd, tv));
-                        hit h2 = map(nv, p2);
-                        if (h2.d < 0.0004f * (1 + tv * 0.2f)) { cb = shade(nv, p2, normal_at(nv, p2), mul(rd, -1), h2.m); got = 1; break; }
-                        tv += h2.d * 0.72f;
-                    }
-                    float a = 0.45f;
-                    if (got) {
-                        c = mixv(cb, c, a);
-                        acc[0] += to_srgb(c.x); acc[1] += to_srgb(c.y); acc[2] += to_srgb(c.z); acc[3] += 1;
-                    } else {
-                        /* 뒤가 배경이면 베일을 반투명으로 */
-                        float bgc[3] = { bg[0], bg[1], bg[2] };
-                        if (bg[3] > 0) {
-                            acc[0] += to_srgb(mixf(bgc[0], c.x, a)); acc[1] += to_srgb(mixf(bgc[1], c.y, a)); acc[2] += to_srgb(mixf(bgc[2], c.z, a)); acc[3] += 1;
-                        } else {
-                            acc[0] += to_srgb(c.x) * a; acc[1] += to_srgb(c.y) * a; acc[2] += to_srgb(c.z) * a; acc[3] += a;
-                        }
-                    }
-                    return;
-                }
-                acc[0] += to_srgb(c.x); acc[1] += to_srgb(c.y); acc[2] += to_srgb(c.z); acc[3] += 1;
-                return;
-            }
-            t += hh.d * 0.72f;
+    hit hh;
+    float t = trace_doll(j->dl, ro, rd, 20, &hh);
+    if (t > 0) {
+        v3 p = add(ro, mul(rd, t));
+        v3 c = shade(j->dl, p, normal_at(j->dl, p), mul(rd, -1), hh.m);
+        float cover = 1;
+        if (hh.m == M_VEIL && j->dl->noveil) {
+            /* 비치는 베일·망토: 45% 만 덮고 뒤를 마저 그린다 */
+            const struct df_doll *nv = j->dl->noveil;
+            hit h2;
+            float t2 = trace_doll(nv, add(p, mul(rd, 0.006f)), rd, 20, &h2);
+            v3 behind;
+            if (t2 > 0) {
+                v3 p2 = add(add(p, mul(rd, 0.006f)), mul(rd, t2));
+                behind = shade(nv, p2, normal_at(nv, p2), mul(rd, -1), h2.m);
+            } else if (j->background) behind = room_color(j->dl, ro, rd, 0);
+            else { behind = V(0, 0, 0); cover = 0.45f; }
+            c = cover < 1 ? c : mixv(behind, c, 0.45f);
         }
+        acc[0] += c.x * cover; acc[1] += c.y * cover; acc[2] += c.z * cover; acc[3] += cover;
+        return;
     }
-    if (bg[3] > 0) { acc[0] += to_srgb(bg[0]); acc[1] += to_srgb(bg[1]); acc[2] += to_srgb(bg[2]); acc[3] += 1; }
+    if (j->background) {
+        v3 c = room_color(j->dl, ro, rd, 0);
+        acc[0] += c.x; acc[1] += c.y; acc[2] += c.z; acc[3] += 1;
+    }
 }
 
 static void *render_rows(void *arg) {
     render_job *j = arg;
+    float n = (float)(j->ss * j->ss);
     for (int y = j->row0; y < j->h; y += j->step)
         for (int x = 0; x < j->w; x++) {
             float acc[4] = { 0, 0, 0, 0 };
             for (int sy = 0; sy < j->ss; sy++)
                 for (int sx = 0; sx < j->ss; sx++)
                     trace_pixel(j, x + (sx + 0.5f) / j->ss, y + (sy + 0.5f) / j->ss, acc);
-            uint8_t *o = &j->out[((size_t)y * j->w + x) * 4];
-            float n = (float)(j->ss * j->ss);
-            if (acc[3] > 0) {
-                for (int c = 0; c < 3; c++) o[c] = (uint8_t)clampf(acc[c] / acc[3] * 255 + 0.5f, 0, 255);
-                o[3] = (uint8_t)clampf(acc[3] / n * 255 + 0.5f, 0, 255);
-            } else memset(o, 0, 4);
+            float *o = &j->hdr[((size_t)y * j->w + x) * 4];
+            /* 덮인 부분의 평균 색 (투명 배경에서 가장자리 색이 어두워지지 않게) */
+            for (int c = 0; c < 3; c++) o[c] = acc[3] > 0 ? acc[c] / acc[3] : 0;
+            o[3] = acc[3] / n;
         }
     return NULL;
+}
+
+/* 블룸: 밝은 부분을 1/4 해상도에서 번지게 해 더한다 */
+static void bloom(float *hdr, int w, int h, float strength) {
+    int bw = (w + 3) / 4, bh = (h + 3) / 4;
+    float *a = calloc((size_t)bw * bh * 3, sizeof(float)), *b = calloc((size_t)bw * bh * 3, sizeof(float));
+    if (!a || !b) { free(a); free(b); return; }
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            float *px = &hdr[((size_t)y * w + x) * 4];
+            float *q = &a[((size_t)(y / 4) * bw + x / 4) * 3];
+            for (int c = 0; c < 3; c++) q[c] += fmaxf(px[c] - 0.9f, 0) / 16.0f;
+        }
+    static const float k[9] = { 0.028f, 0.066f, 0.124f, 0.180f, 0.204f, 0.180f, 0.124f, 0.066f, 0.028f };
+    for (int pass = 0; pass < 2; pass++) {
+        for (int y = 0; y < bh; y++)
+            for (int x = 0; x < bw; x++)
+                for (int c = 0; c < 3; c++) {
+                    float s = 0;
+                    for (int i = -4; i <= 4; i++) { int xx = x + i * (pass + 1); xx = xx < 0 ? 0 : xx >= bw ? bw - 1 : xx; s += k[i + 4] * a[((size_t)y * bw + xx) * 3 + c]; }
+                    b[((size_t)y * bw + x) * 3 + c] = s;
+                }
+        for (int y = 0; y < bh; y++)
+            for (int x = 0; x < bw; x++)
+                for (int c = 0; c < 3; c++) {
+                    float s = 0;
+                    for (int i = -4; i <= 4; i++) { int yy = y + i * (pass + 1); yy = yy < 0 ? 0 : yy >= bh ? bh - 1 : yy; s += k[i + 4] * b[((size_t)yy * bw + x) * 3 + c]; }
+                    a[((size_t)y * bw + x) * 3 + c] = s;
+                }
+    }
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            /* 쌍선형 업샘플 */
+            float fx = (x + 0.5f) / 4 - 0.5f, fy = (y + 0.5f) / 4 - 0.5f;
+            int x0 = (int)floorf(fx), y0 = (int)floorf(fy);
+            float tx = fx - x0, ty = fy - y0;
+            for (int c = 0; c < 3; c++) {
+                float v = 0;
+                for (int dy = 0; dy <= 1; dy++)
+                    for (int dx = 0; dx <= 1; dx++) {
+                        int xx = x0 + dx, yy = y0 + dy;
+                        xx = xx < 0 ? 0 : xx >= bw ? bw - 1 : xx; yy = yy < 0 ? 0 : yy >= bh ? bh - 1 : yy;
+                        v += a[((size_t)yy * bw + xx) * 3 + c] * (dx ? tx : 1 - tx) * (dy ? ty : 1 - ty);
+                    }
+                hdr[((size_t)y * w + x) * 4 + c] += v * strength;
+            }
+        }
+    free(a);
+    free(b);
 }
 
 int df_doll_render(const df_doll *dl, int w, int h, double yaw_deg, double pitch_deg, double zoom, int flags, uint8_t *rgba) {
@@ -967,7 +1164,8 @@ int df_doll_render(const df_doll *dl, int w, int h, double yaw_deg, double pitch
     float top = flags & DF_RENDER_TALL ? fmaxf(dl->top, 1.95f) : dl->top; /* 라인업: 모두 같은 축척 */
     float half = top * 0.5f + 0.10f;
     v3 target = V(0, mixf(top * 0.5f, 1.42f, clampf((z - 1) / 2.5f, 0, 1)), 0);
-    float dist = 4.2f;
+    /* 레퍼런스처럼 가깝고 낮은 카메라 — 원근이 살아 다리가 길고 발이 크게 보인다 */
+    float dist = 3.3f;
     v3 cam = add(target, V(-sinf(yaw) * cosf(pitch) * dist, sinf(pitch) * dist, cosf(yaw) * cosf(pitch) * dist));
     render_job base;
     base.dl = dl; base.w = w; base.h = h;
@@ -978,7 +1176,8 @@ int df_doll_render(const df_doll *dl, int w, int h, double yaw_deg, double pitch
     base.right = nrm(cross(base.fwd, V(0, 1, 0)));
     base.up = cross(base.right, base.fwd);
     base.tan_half = half / dist / z;
-    base.out = rgba;
+    base.hdr = malloc(sizeof(float) * 4 * (size_t)w * h);
+    if (!base.hdr) return 0;
     long ncpu = sysconf(_SC_NPROCESSORS_ONLN);
     int nt = ncpu < 1 ? 1 : ncpu > 64 ? 64 : (int)ncpu;
     render_job jobs[64];
@@ -989,9 +1188,23 @@ int df_doll_render(const df_doll *dl, int w, int h, double yaw_deg, double pitch
         jobs[i].row0 = i;
         jobs[i].step = nt;
         if (pthread_create(&th[i], NULL, render_rows, &jobs[i]) == 0) started++;
-        else { render_rows(&jobs[i]); }
+        else render_rows(&jobs[i]);
     }
     for (int i = 0; i < nt && i < started; i++) pthread_join(th[i], NULL);
+    if (base.background) bloom(base.hdr, w, h, 0.85f);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            float *px = &base.hdr[((size_t)y * w + x) * 4];
+            uint8_t *o = &rgba[((size_t)y * w + x) * 4];
+            float vig = 1;
+            if (base.background) {
+                float dx = (x + 0.5f) / w - 0.5f, dy = (y + 0.5f) / h - 0.5f;
+                vig = 1 - 0.32f * (dx * dx + dy * dy) * 2.2f;
+            }
+            for (int c = 0; c < 3; c++) o[c] = (uint8_t)(lin_to_srgb(aces(px[c] * 1.15f * vig)) * 255 + 0.5f);
+            o[3] = (uint8_t)(clampf(px[3], 0, 1) * 255 + 0.5f);
+        }
+    free(base.hdr);
     return 1;
 }
 
