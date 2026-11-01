@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
@@ -27,13 +28,35 @@ internal sealed class MainWindow : Window
 
     private readonly ComboBox _recipes = new() { MinWidth = 300 };
     private readonly StackPanel _palette = new() { Spacing = 4 };
-    private readonly Image _front = PixelImage(16, 32, 10);
-    private readonly Image _back = PixelImage(16, 32, 10);
-    private readonly Image _texture = PixelImage(64, 64, 4);
+    private readonly Image _front = PixelImage(16, 32, 5);
+    private readonly Image _back = PixelImage(16, 32, 5);
+    private readonly Image _texture = PixelImage(64, 64, 3);
     private readonly TextBlock _status = new() { TextWrapping = TextWrapping.Wrap, Foreground = Ink };
     private readonly TextBlock _report = new() { TextWrapping = TextWrapping.Wrap, FontFamily = new FontFamily("monospace"), FontSize = 12, Foreground = Muted };
     private readonly TextBox _variantId = new() { Watermark = "variant id (예: jenny_cyber_rose)" };
     private readonly TextBox _variantTitle = new() { Watermark = "표시 이름 (예: 제니 (로즈))" };
+    private readonly Image _doll = new() { Width = 400, Height = 600, Stretch = Stretch.Uniform };
+    private readonly Slider _yaw = new() { Minimum = -90, Maximum = 90, Value = 16, Width = 220 };
+    private readonly CheckBox _face = new() { Content = "얼굴 클로즈업" };
+    private readonly StackPanel _makeupPanel = new() { Spacing = 2 };
+    private readonly Dictionary<string, double> _makeup = new();
+    private int _renderVersion;
+
+    /// <summary>헤드리스 스크린샷처럼 즉시 그려야 할 때 (기본은 백그라운드 렌더)</summary>
+    public static bool SyncRender { get; set; }
+
+    /// <summary>레시피 doll.makeup 키 — 이름, 범위, 엔진 기본값 (sculpt.c 와 같은 값)</summary>
+    private static readonly (string Key, string Label, double Min, double Max, double Default)[] MakeupKeys =
+    {
+        ("eye_size", "눈 크기", 0.7, 1.3, 1.0),
+        ("eye_open", "눈 뜬 정도", 0.3, 1.0, 0.66),
+        ("eye_tilt", "눈꼬리", -0.3, 0.8, 0.35),
+        ("lash", "속눈썹 · 윙", 0.0, 1.6, 1.0),
+        ("brow_arch", "눈썹 아치", 0.0, 2.0, 1.0),
+        ("blush", "볼 홍조", 0.0, 1.5, 0.75),
+        ("lip_curve", "입꼬리", -0.5, 2.0, 1.0),
+        ("gloss", "머릿결 윤기", 0.0, 2.0, 1.0),
+    };
 
     private readonly Dictionary<string, string> _overrides = new();
     private List<KeyValuePair<string, string>> _baseColors = new();
@@ -53,6 +76,8 @@ internal sealed class MainWindow : Window
             if (_loading || _recipes.SelectedIndex < 0) return;
             Open(_recipePaths[_recipes.SelectedIndex]);
         };
+        _yaw.PropertyChanged += (_, e) => { if (e.Property == RangeBase.ValueProperty) Render3D(); };
+        _face.IsCheckedChanged += (_, _) => Render3D();
         RefreshRecipes(initialRecipe);
     }
 
@@ -71,18 +96,42 @@ internal sealed class MainWindow : Window
         header.Children.Add(pick);
         header.Children.Add(titles);
 
-        var left = Card("메이크업 팔레트", new ScrollViewer { Content = _palette, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto });
+        var leftBody = new StackPanel { Spacing = 6 };
+        leftBody.Children.Add(new TextBlock { Text = "메이크업 곡선", FontWeight = FontWeight.SemiBold, Foreground = Accent });
+        leftBody.Children.Add(new TextBlock { Text = "체형은 3D 레퍼런스 실측 그대로 고정. 메이크업만 설계합니다.", FontSize = 12, Foreground = Muted, TextWrapping = TextWrapping.Wrap });
+        leftBody.Children.Add(_makeupPanel);
+        leftBody.Children.Add(new Separator { Margin = new Thickness(0, 6) });
+        leftBody.Children.Add(new TextBlock { Text = "팔레트 (3D · 스킨 공용)", FontWeight = FontWeight.SemiBold, Foreground = Accent });
+        leftBody.Children.Add(_palette);
+        var left = Card("메이크업", new ScrollViewer { Content = leftBody, VerticalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto });
 
-        var views = new WrapPanel { HorizontalAlignment = HorizontalAlignment.Center };
-        views.Children.Add(Labeled("정면", _front));
-        views.Children.Add(Labeled("후면", _back));
-        views.Children.Add(Labeled("64×64 텍스처", _texture));
-        var center = Card("미리보기", new ScrollViewer { Content = views });
+        RenderOptions.SetBitmapInterpolationMode(_doll, Avalonia.Media.Imaging.BitmapInterpolationMode.HighQuality);
+        var stage = new StackPanel { Spacing = 6 };
+        stage.Children.Add(new Border { Background = new SolidColorBrush(Color.Parse("#2A1F30")), CornerRadius = new CornerRadius(10), Child = _doll, ClipToBounds = true });
+        var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, HorizontalAlignment = HorizontalAlignment.Center };
+        controls.Children.Add(new TextBlock { Text = "회전", VerticalAlignment = VerticalAlignment.Center, Foreground = Muted });
+        controls.Children.Add(_yaw);
+        controls.Children.Add(_face);
+        stage.Children.Add(controls);
+
+        var pixels = new StackPanel { Spacing = 4, Margin = new Thickness(12, 0, 0, 0) };
+        pixels.Children.Add(new TextBlock { Text = "마인크래프트 스킨", FontWeight = FontWeight.SemiBold, Foreground = Ink });
+        var flat = new StackPanel { Orientation = Orientation.Horizontal };
+        flat.Children.Add(Labeled("정면", _front));
+        flat.Children.Add(Labeled("후면", _back));
+        pixels.Children.Add(flat);
+        pixels.Children.Add(Labeled("64×64 텍스처", _texture));
+
+        var views = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        views.Children.Add(stage);
+        views.Children.Add(pixels);
+        var center = Card("곡선 3D 미리보기", new ScrollViewer { Content = views, HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Auto });
 
         var actions = new StackPanel { Spacing = 8 };
         actions.Children.Add(_status);
         actions.Children.Add(Button("스킨 PNG 저장…", SaveSkinAsync));
-        actions.Children.Add(Button("팔레트 되돌리기", () => { _overrides.Clear(); Open(_recipe!); return Task.CompletedTask; }));
+        actions.Children.Add(Button("3D 렌더 PNG 저장…", SaveRenderAsync));
+        actions.Children.Add(Button("메이크업 되돌리기", () => { _overrides.Clear(); _makeup.Clear(); Open(_recipe!); return Task.CompletedTask; }));
         actions.Children.Add(new Separator { Margin = new Thickness(0, 6) });
         actions.Children.Add(new TextBlock { Text = "메이크업 변형으로 저장", FontWeight = FontWeight.SemiBold, Foreground = Ink });
         actions.Children.Add(new TextBlock { Text = "원본 레시피를 extends 하고 바꾼 색만 담은 새 레시피를 만든다. 옷 모양과 얼굴은 원본을 그대로 따른다.", TextWrapping = TextWrapping.Wrap, Foreground = Muted, FontSize = 12 });
@@ -167,12 +216,78 @@ internal sealed class MainWindow : Window
 
     public void Open(string recipePath)
     {
-        if (_recipe != recipePath) _overrides.Clear();
+        if (_recipe != recipePath) { _overrides.Clear(); _makeup.Clear(); }
         _recipe = recipePath;
         _baseColors = Workspace.MergedPalette(recipePath);
         _palette.Children.Clear();
         foreach (var (name, value) in _baseColors) _palette.Children.Add(PaletteRow(name, value));
+        _makeupPanel.Children.Clear();
+        foreach (var k in MakeupKeys) _makeupPanel.Children.Add(MakeupRow(k.Key, k.Label, k.Min, k.Max, Workspace.MakeupValue(recipePath, k.Key, k.Default)));
         Reforge();
+    }
+
+    /// <summary>스크린샷/스크립트용: 메이크업 곡선 하나를 바꾼다</summary>
+    public void SetMakeup(string key, double value)
+    {
+        _makeup[key] = value;
+        Open(_recipe!);
+    }
+
+    public static bool IsMakeupKey(string key) => MakeupKeys.Any(k => k.Key == key);
+
+    private Control MakeupRow(string key, string label, double min, double max, double recipeValue)
+    {
+        var value = _makeup.TryGetValue(key, out var v) ? v : recipeValue;
+        var text = new TextBlock { Text = value.ToString("0.00"), Width = 40, VerticalAlignment = VerticalAlignment.Center, Foreground = Muted, FontFamily = new FontFamily("monospace") };
+        var slider = new Slider { Minimum = min, Maximum = max, Value = value, SmallChange = 0.01 };
+        var name = new TextBlock { Text = label, Width = 92, VerticalAlignment = VerticalAlignment.Center, Foreground = _makeup.ContainsKey(key) ? Accent : Ink };
+        slider.PropertyChanged += (_, e) =>
+        {
+            if (e.Property != RangeBase.ValueProperty) return;
+            var nv = Math.Round(slider.Value, 2);
+            text.Text = nv.ToString("0.00");
+            if (Math.Abs(nv - recipeValue) < 0.005) _makeup.Remove(key); else _makeup[key] = nv;
+            name.Foreground = _makeup.ContainsKey(key) ? Accent : Ink;
+            Render3D();
+        };
+        var g = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"), ColumnSpacing = 6 };
+        Grid.SetColumn(name, 0);
+        Grid.SetColumn(slider, 1);
+        Grid.SetColumn(text, 2);
+        g.Children.Add(name);
+        g.Children.Add(slider);
+        g.Children.Add(text);
+        return g;
+    }
+
+    /// <summary>곡선 3D 렌더 — 최신 요청만 화면에 올린다</summary>
+    private void Render3D()
+    {
+        if (_recipe == null) return;
+        var json = VariantJson();
+        var dir = Path.GetDirectoryName(_recipe)!;
+        var yaw = _yaw.Value;
+        var face = _face.IsChecked == true;
+        var version = ++_renderVersion;
+        void Draw(byte[] px, int w, int h) { if (version == _renderVersion) _doll.Source = Bitmap(px, w, h); }
+        if (SyncRender)
+        {
+            try { Draw(Doll.Render(json, dir, 800, 1200, yaw, 6, face ? 4 : 1, Doll.Background | Doll.HighQuality), 800, 1200); }
+            catch (Exception e) { _report.Text = e.Message; }
+            return;
+        }
+        Task.Run(() =>
+        {
+            try
+            {
+                var px = Doll.Render(json, dir, 400, 600, yaw, 6, face ? 4 : 1, Doll.Background);
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => Draw(px, 400, 600));
+            }
+            catch (Exception e)
+            {
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => _report.Text = e.Message);
+            }
+        });
     }
 
     /// <summary>스크린샷/스크립트용: 색 하나를 바꾼다</summary>
@@ -238,7 +353,7 @@ internal sealed class MainWindow : Window
         s.StartsWith('#') && Color.TryParse(s.Length == 9 ? "#" + s[7..9] + s[1..7] : s, out var c) ? c : null;
 
     private string VariantJson(JsonObject? meta = null) =>
-        Workspace.Variant(_recipe!, _overrides, meta).ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
+        Workspace.Variant(_recipe!, _overrides, meta, _makeup).ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping });
 
     private Skin? _skin;
 
@@ -255,7 +370,8 @@ internal sealed class MainWindow : Window
             _texture.Source = Bitmap(skin.Rgba(), 64, 64);
             var (errors, report) = skin.Validate();
             _report.Text = errors == 0 && report.Length == 0 ? "✓ 게임 규격 통과 (64×64, base 레이어 불투명)" : report;
-            _status.Text = $"{Workspace.Title(_recipe)} · {(skin.Slim ? "slim (Alex 3px 팔)" : "classic (Steve 4px 팔)")} · 바꾼 색 {_overrides.Count}개";
+            _status.Text = $"{Workspace.Title(_recipe)} · 바꾼 색 {_overrides.Count}개 · 바꾼 메이크업 {_makeup.Count}개";
+            Render3D();
         }
         catch (Exception e)
         {
@@ -273,6 +389,29 @@ internal sealed class MainWindow : Window
     }
 
     // ---- 저장 ----
+
+    private async Task SaveRenderAsync()
+    {
+        if (_recipe == null) return;
+        var id = Workspace.Load(_recipe)["meta"]?["id"]?.GetValue<string>() ?? "doll";
+        string? path = null;
+        if (StorageProvider.CanSave)
+        {
+            var file = await StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+            {
+                SuggestedFileName = id + "_3d.png",
+                FileTypeChoices = new[] { new FilePickerFileType("PNG") { Patterns = new[] { "*.png" } } },
+            });
+            if (file == null) return;
+            path = file.TryGetLocalPath();
+            if (path == null) { _status.Text = "로컬 파일로만 저장할 수 있습니다."; return; }
+        }
+        path ??= Path.Combine(Workspace.Home, "build", "studio", id + "_3d.png");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        var px = await Task.Run(() => Doll.Render(VariantJson(), Path.GetDirectoryName(_recipe)!, 1200, 1800, _yaw.Value, 6, _face.IsChecked == true ? 4 : 1, Doll.Background | Doll.HighQuality));
+        Bitmap(px, 1200, 1800).Save(path);
+        _status.Text = "저장함: " + path;
+    }
 
     private async Task SaveSkinAsync()
     {
@@ -302,8 +441,8 @@ internal sealed class MainWindow : Window
         var id = (_variantId.Text ?? "").Trim();
         if (!Regex.IsMatch(id, "^[a-z0-9_]{3,40}$"))
             throw new InvalidOperationException("variant id 는 영문 소문자·숫자·_ 3~40자 (Bedrock 스킨 id 로도 쓰임)");
-        if (_overrides.Count == 0)
-            throw new InvalidOperationException("바꾼 색이 없습니다. 팔레트에서 색을 먼저 바꿔 주세요.");
+        if (_overrides.Count == 0 && _makeup.Count == 0)
+            throw new InvalidOperationException("바꾼 색이나 메이크업이 없습니다. 먼저 바꿔 주세요.");
         var target = Path.Combine(Path.GetDirectoryName(_recipe)!, id + ".dolly.json");
         if (File.Exists(target)) throw new InvalidOperationException("이미 있는 레시피입니다: " + Path.GetFileName(target));
 
@@ -314,7 +453,7 @@ internal sealed class MainWindow : Window
             ["id"] = id,
             ["character"] = parentMeta?["character"]?.GetValue<string>() ?? "",
             ["title"] = new JsonObject { ["en_US"] = title, ["ko_KR"] = title },
-            ["outfit"] = "메이크업 변형: " + string.Join(", ", _overrides.Keys),
+            ["outfit"] = "메이크업 변형: " + string.Join(", ", _overrides.Keys.Concat(_makeup.Keys)),
             ["author"] = parentMeta?["author"]?.GetValue<string>() ?? "",
             ["license"] = parentMeta?["license"]?.GetValue<string>() ?? "CC-BY-NC-ND-4.0",
             ["rating"] = "all-ages",
@@ -327,6 +466,7 @@ internal sealed class MainWindow : Window
         }
         File.WriteAllText(target, VariantJson(meta) + "\n");
         _overrides.Clear();
+        _makeup.Clear();
         _recipe = null;
         RefreshRecipes(target);
         _status.Text = "새 레시피: " + Path.GetFileName(target) + " (collection.json 에 추가하면 배포 팩에 들어갑니다)";

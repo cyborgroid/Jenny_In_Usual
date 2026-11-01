@@ -14,15 +14,18 @@ if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
 endif()
 
 # ---- C 코어 (모든 언어 도구의 기반) ----
-set(DF_CORE_SOURCES core/src/json.c core/src/png.c core/src/skin.c core/src/forge.c)
+set(DF_CORE_SOURCES core/src/json.c core/src/png.c core/src/skin.c core/src/forge.c core/src/sculpt.c)
+find_package(Threads REQUIRED)
 
 add_library(dollyforge_static STATIC ${DF_CORE_SOURCES})
 target_include_directories(dollyforge_static PUBLIC core/include)
+target_link_libraries(dollyforge_static PUBLIC Threads::Threads m)
 set_target_properties(dollyforge_static PROPERTIES OUTPUT_NAME dollyforge POSITION_INDEPENDENT_CODE ON)
 
 # Python(ctypes) · C#(P/Invoke) 가 여는 공유 라이브러리
 add_library(dollyforge SHARED ${DF_CORE_SOURCES})
 target_include_directories(dollyforge PUBLIC core/include)
+target_link_libraries(dollyforge PRIVATE Threads::Threads m)
 set_target_properties(dollyforge PROPERTIES C_VISIBILITY_PRESET hidden VERSION ${PROJECT_VERSION} SOVERSION 0)
 
 # ---- C++ CLI + Bedrock 패키저 ----

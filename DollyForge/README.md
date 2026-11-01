@@ -27,12 +27,49 @@ Dolly Forge 도 각 언어가 맡는 자리가 있습니다. 단, **스킨 규�
 
 | 언어 | 위치 | 하는 일 |
 |---|---|---|
-| **C** | `core/` | `libdollyforge` — 스킨 데이터, 파트/면 UV 표, PNG 인코더·디코더, JSON 파서, 레시피 엔진, 검증기, 픽셀 diff |
+| **C** | `core/` | `libdollyforge` — **곡선 3D 엔진**(SDF 몸·의상·머리 + 곡선 메이크업 + 레이마칭 렌더), 스킨 UV 표, PNG 코덱, JSON 파서, 레시피 엔진, 검증기, 픽셀 diff |
 | **C++** | `cpp/` | `dolly-forge` CLI (`forge` `validate` `info` `diff` `preview` `pack-bedrock`), Bedrock 스킨팩 ZIP 작성기 |
 | **Java** | `java/` | `DollyPreview` — Java Edition 플레이어 모델(classic/slim, 2중 레이어) 정사영 3D 렌더, 라인업 이미지 |
 | **Python** | `python/` | `dollyforge` ctypes 바인딩, `recipe` 포매터, 레퍼런스 팔레트 추출, 회귀 테스트, `build.py` |
-| **C#** | `csharp/` | **Dolly Forge Studio** (Avalonia) — 팔레트 실시간 편집, 정면/후면/텍스처 미리보기, 변형 레시피 저장 |
+| **C#** | `csharp/` | **Dolly Forge Studio** (Avalonia) — 곡선 3D 실시간 미리보기, 메이크업 곡선 슬라이더, 팔레트 편집, 변형 레시피 저장 |
 | **Rust** | `rust/` | `dolly-guard` — 공식 스킨 SHA-256 서명, 무단 변형 감지(어느 파트가 몇 px 바뀌었는지), 레시피 메타/라이선스 린트 |
+
+## 곡선 3D — 레퍼런스의 곡선미를 그대로
+
+![3D](../05_Distribution/previews/Lineup_3D.png)
+
+`03_Sources/3D_Models` 의 캐릭터는 매끈한 곡면으로 된 3D 인물입니다. Dolly Forge 는 그것을 픽셀로 줄이지 않고
+**부호 거리장(SDF) 곡면**으로 다시 세웁니다 (`core/src/sculpt.c`).
+
+- **체형**: `JennyCartoon3D.jpg` 실루엣을 키 1.6m 로 환산해 랜드마크(어깨 1.23m · 가슴 1.16m · 허리 1.037m ·
+  골반 0.91m · 허벅지 0.67m · 무릎 0.47m · 종아리 0.40m)마다 단면을 재고, Catmull-Rom 으로 이어 몸통을 만든다.
+  팔다리·머리·얼굴은 smooth-union 으로 이음매 없이 붙는다. 체형 값은 레퍼런스 그대로 고정 (`figure` 는 모두 1).
+- **메이크업 = 얼굴 위의 곡선**: 아몬드형 눈매(위·아래 눈꺼풀 곡선, 눈꼬리 기울기), 진한 위 속눈썹과 윙,
+  위는 진하고 아래는 밝은 홍채 + 큰 하이라이트, 쌍꺼풀 선, 바깥으로 가늘어지는 눈썹 아치, 볼 홍조, 미소 곡선,
+  머릿결 윤기 띠. 모두 `doll.makeup` 값으로 조절한다.
+- **의상**: 코트(가슴에서 열리고 벨트에서 닫힘, 골반에서 퍼지는 자락) · 후드티 · 메탈릭 미디 드레스 ·
+  하이로우 웨딩드레스와 비치는 베일. 색은 스킨과 **같은 팔레트**.
+- **머리**: 긴 생머리(제니) · 턱선 단발(에일 틸) · 어깨 웨이브(릴라 핀치), 가르마에서 쓸어 넘긴 앞머리, 꽃핀 위치.
+
+```jsonc
+"doll": {
+  "hair":   { "style": "long" },          // long | bob | wavy
+  "flower": { "side": "right" },          // 캐릭터 기준
+  "outfit": { "type": "cyber" },          // cyber | casual | dressup | wedding
+  "figure": { "bust": 1, "waist": 1, "hips": 1, "thighs": 1 },   // 1 = 레퍼런스 실측 (바꾸지 않는다)
+  "makeup": { "eye_size": 1, "eye_open": 0.66, "eye_tilt": 0.35, "lash": 1,
+              "brow_arch": 1, "blush": 0.75, "lip_curve": 1, "gloss": 1 }
+}
+```
+
+```bash
+DollyForge/build/dolly-forge sculpt DollyForge/characters/jenny/jenny_cyber.dolly.json -o jenny.png --size 800x1200 --hq
+DollyForge/build/dolly-forge sculpt ... --zoom 4 --yaw 8      # 얼굴 클로즈업
+```
+
+마인크래프트 바닐라 스킨은 박스 모델이라 곡면을 담을 수 없습니다. 그래서 같은 레시피가 **곡선 3D(설계·홍보·모드용)** 와
+**64×64 스킨(바닐라 게임용)** 을 함께 만듭니다. 곡선 모델을 게임 안에 그대로 넣으려면 모드(예: 커스텀 모델을 지원하는
+Java Edition 모드)가 필요합니다.
 
 ## 빌드
 
@@ -50,7 +87,8 @@ python3 DollyForge/build.py --no-studio
 |---|---|
 | 게임 적용 규격 스킨 PNG (64×64, slim) | `03_Sources/Minecraft_Skins/Jenny_*_Skin.png` |
 | 레퍼런스 렌더에서 뽑은 팔레트 | `01_Concepts/reference_palette.json/.png` |
-| 3D 미리보기 · 라인업 · Studio 스크린샷 | `05_Distribution/previews/` |
+| 곡선 3D 렌더 (전신·얼굴) · 3D 라인업 | `05_Distribution/previews/3D/`, `previews/Lineup_3D.png` |
+| 스킨 3D 미리보기 · 라인업 · Studio 스크린샷 | `05_Distribution/previews/` |
 | Bedrock 스킨팩 | `05_Distribution/bedrock/JennyInUsual.mcpack` |
 | 무결성 서명 | `05_Distribution/integrity.json` |
 

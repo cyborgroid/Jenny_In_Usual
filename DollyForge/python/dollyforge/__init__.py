@@ -8,7 +8,7 @@
 import ctypes
 import os
 
-__all__ = ["Skin", "forge", "forge_json", "load", "library_path", "PARTS"]
+__all__ = ["Skin", "Doll", "forge", "forge_json", "load", "doll", "doll_json", "library_path", "PARTS"]
 
 PARTS = ("head", "body", "arm_r", "arm_l", "leg_r", "leg_l")
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -44,6 +44,15 @@ _lib.df_skin_save_png.argtypes = [_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c
 _lib.df_validate.argtypes = [_p, ctypes.c_char_p, ctypes.c_size_t]
 _lib.df_render_flat.argtypes = [_p, ctypes.c_int, ctypes.POINTER(ctypes.c_uint8)]
 _lib.df_diff.argtypes = [_p, _p, ctypes.POINTER(ctypes.c_int)]
+
+_lib.df_doll_from_recipe.restype = _p
+_lib.df_doll_from_recipe.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
+_lib.df_doll_from_json.restype = _p
+_lib.df_doll_from_json.argtypes = [ctypes.c_char_p, ctypes.c_size_t, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_size_t]
+_lib.df_doll_free.argtypes = [_p]
+_lib.df_doll_render.argtypes = [_p, ctypes.c_int, ctypes.c_int, ctypes.c_double, ctypes.c_double, ctypes.c_double,
+                                ctypes.c_int, ctypes.POINTER(ctypes.c_uint8)]
+RENDER_BACKGROUND, RENDER_HQ = 1, 2
 
 version = _lib.df_version().decode()
 
@@ -116,3 +125,41 @@ def forge_json(text, base_dir="."):
 def load(png_path):
     err = ctypes.create_string_buffer(256)
     return _check(_lib.df_skin_load_png(os.fsencode(png_path), err, len(err)), err)
+
+
+class Doll:
+    """곡선 3D 캐릭터 (레시피의 doll 섹션 + 같은 팔레트)"""
+
+    def __init__(self, handle):
+        if not handle:
+            raise ValueError("null doll handle")
+        self._h = handle
+
+    def __del__(self):
+        h, self._h = getattr(self, "_h", None), None
+        if h:
+            _lib.df_doll_free(h)
+
+    def render(self, width=600, height=900, yaw=22.0, pitch=6.0, zoom=1.0, background=True, hq=False):
+        """RGBA bytes (width*height*4)"""
+        out = (ctypes.c_uint8 * (width * height * 4))()
+        flags = (RENDER_BACKGROUND if background else 0) | (RENDER_HQ if hq else 0)
+        _lib.df_doll_render(self._h, width, height, yaw, pitch, zoom, flags, out)
+        return bytes(out)
+
+
+def doll(recipe_path):
+    err = ctypes.create_string_buffer(512)
+    h = _lib.df_doll_from_recipe(os.fsencode(recipe_path), err, len(err))
+    if not h:
+        raise DollyForgeError(err.value.decode("utf-8", "replace"))
+    return Doll(h)
+
+
+def doll_json(text, base_dir="."):
+    data = text.encode("utf-8")
+    err = ctypes.create_string_buffer(512)
+    h = _lib.df_doll_from_json(data, len(data), os.fsencode(base_dir), err, len(err))
+    if not h:
+        raise DollyForgeError(err.value.decode("utf-8", "replace"))
+    return Doll(h)

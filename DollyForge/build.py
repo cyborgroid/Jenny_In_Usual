@@ -46,6 +46,24 @@ def load_json(path):
         return json.load(f)
 
 
+def lineup_3d(tiles, out):
+    """곡선 3D 렌더를 한 장으로 (Pillow)"""
+    from PIL import Image, ImageDraw, ImageFont
+    imgs = [Image.open(p).convert("RGB").resize((300, 450)) for p, _ in tiles]
+    sheet = Image.new("RGB", (300 * len(imgs), 490), (36, 26, 40))
+    draw = ImageDraw.Draw(sheet)
+    try:
+        font = ImageFont.truetype("DejaVuSans-Bold.ttf", 16)
+    except OSError:
+        font = ImageFont.load_default()
+    for i, (img, (_, title)) in enumerate(zip(imgs, tiles)):
+        sheet.paste(img, (i * 300, 0))
+        w = draw.textlength(title, font=font)
+        draw.text((i * 300 + (300 - w) / 2, 460), title, fill=(236, 226, 244), font=font)
+    sheet.save(out)
+    print("  3D lineup ->", os.path.relpath(out, REPO))
+
+
 def recipe_path(entry):
     """collection.json 의 recipe 는 collection.json 이 있는 폴더 기준 상대 경로"""
     return os.path.normpath(os.path.join(os.path.dirname(COLLECTION), entry["recipe"]))
@@ -97,6 +115,19 @@ def main():
             os.path.join(previews, s["file"].replace("_Skin.png", "_Preview.png")), "--scale", "12")
         titles.append(f"{path}:{meta['title']['en_US']}")
     run("java", "-cp", classes, "dollyforge.DollyPreview", "lineup", os.path.join(previews, "Lineup.png"), *titles, "--scale", "8")
+
+    step("C: 곡선 3D 렌더 (05_Distribution/previews/3D)")
+    shots = os.path.join(previews, "3D")
+    os.makedirs(shots, exist_ok=True)
+    tiles = []
+    for s, path in zip(col["skins"], skin_files):
+        name = s["file"].replace("_Skin.png", "")
+        full = os.path.join(shots, name + "_3D.png")
+        face = os.path.join(shots, name + "_3D_Face.png")
+        run(cli, "sculpt", recipe_path(s), "-o", full, "--size", "600x900", "--yaw", "16", "--hq")
+        run(cli, "sculpt", recipe_path(s), "-o", face, "--size", "600x600", "--yaw", "8", "--zoom", "4", "--hq")
+        tiles.append((full, load_json(recipe_path(s))["meta"]["title"]["en_US"]))
+    lineup_3d(tiles, os.path.join(previews, "Lineup_3D.png"))
 
     step("C++: Bedrock 스킨팩 (05_Distribution/bedrock)")
     bedrock = os.path.join(DIST, "bedrock")

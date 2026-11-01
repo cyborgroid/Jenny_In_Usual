@@ -31,6 +31,11 @@
     "Y": "zip", "A": "top", "Q": "shorts", "q": "shorts_dark",
     "J": "socks", "j": "socks_shade"
   },
+  "doll": {
+    "outfit": {
+      "type": "casual"
+    }
+  },
   "ops": [
     { "op": "note", "text": "---- 몸통: 열린 집업 후드 사이로 검은 이너, 후드 끈, 리브 밑단, 반바지 허리 ----" },
     { "op": "fill", "part": "body", "faces": "all", "color": "hoodie" },

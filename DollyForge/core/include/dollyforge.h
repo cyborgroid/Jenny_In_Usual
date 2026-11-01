@@ -88,6 +88,19 @@ DF_API void df_render_flat(const df_skin *skin, int view, uint8_t *out16x32);
 /* 파트별로 달라진 픽셀 수를 diff[part] 에 기록. 반환값 = 전체 다른 픽셀 수 */
 DF_API int df_diff(const df_skin *a, const df_skin *b, int diff[DF_PART_COUNT]);
 
+/* ---- 곡선 3D (doll) ----
+ * 레시피의 "doll" 섹션(체형·메이크업·머리·의상)과 같은 팔레트로 매끈한 3D 캐릭터를 만든다.
+ * 체형 기본값은 03_Sources/3D_Models 레퍼런스 실측값 그대로. */
+typedef struct df_doll df_doll;
+#define DF_RENDER_BACKGROUND 1   /* 스튜디오 배경 (없으면 투명) */
+#define DF_RENDER_HQ 2           /* 2x2 슈퍼샘플링 */
+DF_API df_doll *df_doll_from_recipe(const char *recipe_path, char *err, size_t errlen);
+DF_API df_doll *df_doll_from_json(const char *json, size_t len, const char *base_dir, char *err, size_t errlen);
+DF_API void df_doll_free(df_doll *doll);
+/* yaw: 0 = 정면, + 면 캐릭터 오른쪽 옆모습이 보인다. pitch: 카메라 높이각.
+ * zoom: 1 = 전신, 3.5 = 얼굴 클로즈업. rgba = w*h*4 */
+DF_API int df_doll_render(const df_doll *doll, int w, int h, double yaw_deg, double pitch_deg, double zoom, int flags, uint8_t *rgba);
+
 /* ---- 유틸 ---- */
 DF_API uint32_t df_crc32(const uint8_t *data, size_t len, uint32_t crc);
 DF_API int df_png_encode(const uint8_t *rgba, int w, int h, uint8_t **out, size_t *outlen);

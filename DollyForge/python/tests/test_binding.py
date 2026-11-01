@@ -56,6 +56,26 @@ class RecipeTests(unittest.TestCase):
         self.assertIn("unknown color 'nope'", str(cm.exception))
 
 
+class DollTests(unittest.TestCase):
+    def test_every_look_renders_as_curved_3d(self):
+        for path in RECIPES:
+            if R.load(path).get("meta", {}).get("abstract"):
+                continue
+            with self.subTest(recipe=os.path.basename(path)):
+                px = df.doll(path).render(60, 90, background=False)
+                covered = sum(1 for i in range(3, len(px), 4) if px[i])
+                self.assertGreater(covered, 60 * 90 * 0.12)   # 캐릭터가 화면을 채운다
+
+    def test_makeup_override_changes_only_the_face(self):
+        base = os.path.join(ROOT, "characters", "jenny")
+        plain = df.doll(os.path.join(base, "jenny_cyber.dolly.json")).render(120, 180, background=False)
+        variant = {"dollyforge": 1, "extends": "jenny_cyber.dolly.json", "doll": {"makeup": {"blush": 0.0}}}
+        changed = df.doll_json(json.dumps(variant), base).render(120, 180, background=False)
+        diff = [i // 4 // 120 for i in range(0, len(plain), 4) if plain[i:i + 3] != changed[i:i + 3]]
+        self.assertTrue(diff)
+        self.assertLess(max(diff), 180 * 0.25)               # 바뀐 픽셀은 머리 높이 안에만
+
+
 @unittest.skipIf(Image is None, "Pillow not installed")
 class PngInteropTests(unittest.TestCase):
     def test_c_encoder_is_readable_by_pillow(self):

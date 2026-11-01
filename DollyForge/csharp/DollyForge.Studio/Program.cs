@@ -37,8 +37,13 @@ internal static class Program
             .UseSkia()
             .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
             .SetupWithoutStarting();
+        MainWindow.SyncRender = true;
         var win = new MainWindow(recipe);
-        foreach (var (name, hex) in sets) win.SetColor(name, hex);
+        foreach (var (name, value) in sets)
+        {
+            if (MainWindow.IsMakeupKey(name) && double.TryParse(value, System.Globalization.CultureInfo.InvariantCulture, out var v)) win.SetMakeup(name, v);
+            else win.SetColor(name, value);
+        }
         win.Show();
         for (var i = 0; i < 3; i++)
         {

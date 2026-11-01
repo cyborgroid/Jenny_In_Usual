@@ -13,6 +13,7 @@
  * 그래서 자식 레시피에서 팔레트만 바꾸면 같은 옷의 "메이크업 변형"이 된다.
  */
 #include "dollyforge_json.h"
+#include "internal.h"
 
 #include <ctype.h>
 #include <stdio.h>
@@ -482,20 +483,21 @@ static int visit(forge_ctx *c, chain *ch, df_json *doc, const char *name, const 
     return 1;
 }
 
-static df_skin *forge(chain *ch, forge_ctx *c) {
-    df_model model = DF_MODEL_CLASSIC;
+/* 체인 전체의 model/palette/legend 를 합치고 팔레트가 모두 해석되는지 확인 */
+static int merge_chain(chain *ch, forge_ctx *c, df_model *model) {
+    *model = DF_MODEL_CLASSIC;
     for (int i = 0; i < ch->n; i++) {
         c->where = ch->names[i];
         const char *m = df_json_str(df_json_get(ch->docs[i], "model"));
-        if (m && !strcmp(m, "slim")) model = DF_MODEL_SLIM;
-        else if (m && !strcmp(m, "classic")) model = DF_MODEL_CLASSIC;
-        else if (m) { ferr(c, "unknown model '%s' (classic, slim)", m); return NULL; }
+        if (m && !strcmp(m, "slim")) *model = DF_MODEL_SLIM;
+        else if (m && !strcmp(m, "classic")) *model = DF_MODEL_CLASSIC;
+        else if (m) return ferr(c, "unknown model '%s' (classic, slim)", m);
         const df_json *pal = df_json_get(ch->docs[i], "palette");
         for (size_t k = 0; k < df_json_len(pal); k++) {
             if (!strncmp(df_json_key_at(pal, k), "//", 2)) continue; /* "// 메모": 주석 키 */
             const char *v = df_json_str(df_json_at(pal, k));
-            if (!v) { ferr(c, "palette '%s' must be a string", df_json_key_at(pal, k)); return NULL; }
-            if (c->npal == MAX_PALETTE) { ferr(c, "palette larger than 256 entries%s", NULL); return NULL; }
+            if (!v) return ferr(c, "palette '%s' must be a string", df_json_key_at(pal, k));
+            if (c->npal == MAX_PALETTE) return ferr(c, "palette larger than 256 entries%s", NULL);
             c->pal[c->npal].name = df_json_key_at(pal, k);
             c->pal[c->npal].value = v;
             c->npal++;
@@ -503,18 +505,24 @@ static df_skin *forge(chain *ch, forge_ctx *c) {
         const df_json *leg = df_json_get(ch->docs[i], "legend");
         for (size_t k = 0; k < df_json_len(leg); k++) {
             const char *key = df_json_key_at(leg, k), *v = df_json_str(df_json_at(leg, k));
-            if (strlen(key) != 1 || !v) { ferr(c, "legend key '%s' must be one character mapped to a color", key); return NULL; }
+            if (strlen(key) != 1 || !v) return ferr(c, "legend key '%s' must be one character mapped to a color", key);
             c->legend[(unsigned char)key[0]] = v;
         }
     }
-    c->skin = df_skin_new(model);
-    if (!c->skin) return NULL;
     /* 팔레트가 전부 해석되는지 먼저 확인 (안 쓰는 색의 오타도 잡는다) */
     for (int i = 0; i < c->npal; i++) {
         uint8_t tmp[4];
         c->where = "palette";
-        if (!resolve_color(c, c->pal[i].value, tmp)) { df_skin_free(c->skin); return NULL; }
+        if (!resolve_color(c, c->pal[i].value, tmp)) return 0;
     }
+    return 1;
+}
+
+static df_skin *forge(chain *ch, forge_ctx *c) {
+    df_model model;
+    if (!merge_chain(ch, c, &model)) return NULL;
+    c->skin = df_skin_new(model);
+    if (!c->skin) return NULL;
     for (int i = 0; i < ch->n; i++) {
         c->where = ch->names[i];
         if (!run_ops(c, df_json_get(ch->docs[i], "ops"))) { df_skin_free(c->skin); return NULL; }
@@ -557,4 +565,71 @@ df_skin *df_forge_file(const char *path, char *err, size_t errlen) {
     df_skin *skin = forge_doc(doc, path, dir, err, errlen);
     free(dir);
     return skin;
+}
+
+/* ---- 내부 API (internal.h): 곡선 3D 엔진이 같은 레시피·팔레트를 쓴다 ---- */
+
+struct df_recipe {
+    forge_ctx *c;
+    chain ch;
+};
+
+static df_recipe *recipe_from_doc(df_json *doc, const char *name, const char *dir, char *err, size_t errlen) {
+    df_recipe *r = calloc(1, sizeof *r);
+    if (!r || !(r->c = calloc(1, sizeof *r->c))) { free(r); df_json_free(doc); return NULL; }
+    r->c->err = err;
+    r->c->errlen = errlen;
+    char *norm = normalize_path(name);
+    df_model model;
+    int ok = norm && visit(r->c, &r->ch, doc, norm, dir, 0) && merge_chain(&r->ch, r->c, &model);
+    if (!norm) df_json_free(doc);
+    free(norm);
+    if (!ok) { df__recipe_free(r); return NULL; }
+    return r;
+}
+
+df_recipe *df__recipe_file(const char *path, char *err, size_t errlen) {
+    if (err && errlen) err[0] = 0;
+    size_t len;
+    char *text = read_file(path, &len);
+    if (!text) { snprintf(err, errlen, "cannot read %s", path); return NULL; }
+    char jerr[160];
+    df_json *doc = df_json_parse(text, len, jerr, sizeof jerr);
+    free(text);
+    if (!doc) { snprintf(err, errlen, "%s: %s", path, jerr); return NULL; }
+    char *dir = dir_of(path);
+    df_recipe *r = recipe_from_doc(doc, path, dir, err, errlen);
+    free(dir);
+    return r;
+}
+
+df_recipe *df__recipe_json(const char *json, size_t len, const char *base_dir, char *err, size_t errlen) {
+    if (err && errlen) err[0] = 0;
+    df_json *doc = df_json_parse(json, len, err, errlen);
+    if (!doc) return NULL;
+    return recipe_from_doc(doc, "<recipe>", base_dir ? base_dir : ".", err, errlen);
+}
+
+void df__recipe_free(df_recipe *r) {
+    if (!r) return;
+    chain_free(&r->ch);
+    free(r->c);
+    free(r);
+}
+
+int df__recipe_color(df_recipe *r, const char *spec, uint8_t rgba[4]) {
+    char *saved = r->c->err;
+    r->c->err = NULL; /* 조회 실패는 호출자가 기본값으로 처리 */
+    int ok = resolve_color(r->c, spec, rgba);
+    r->c->err = saved;
+    return ok;
+}
+
+const df_json *df__recipe_doll(const df_recipe *r, const char *section, const char *key) {
+    for (int i = r->ch.n; i-- > 0;) {
+        const df_json *sec = df_json_get(df_json_get(r->ch.docs[i], "doll"), section);
+        const df_json *v = key ? df_json_get(sec, key) : sec;
+        if (v) return v;
+    }
+    return NULL;
 }

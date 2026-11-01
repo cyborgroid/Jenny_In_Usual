@@ -16,7 +16,8 @@ const char *kUsage =
     "  dolly-forge info <skin.png>\n"
     "  dolly-forge diff <official.png> <other.png>\n"
     "  dolly-forge preview <skin.png> -o <png> [--scale N]\n"
-    "  dolly-forge pack-bedrock <pack.json> -o <out.mcpack>\n";
+    "  dolly-forge pack-bedrock <pack.json> -o <out.mcpack>\n"
+    "  dolly-forge sculpt <recipe.dolly.json> -o <render.png> [--size WxH] [--yaw DEG] [--pitch DEG] [--zoom Z] [--hq] [--transparent]\n";
 
 void usage() {
     std::fprintf(stderr, kUsage, df_version());
@@ -50,6 +51,9 @@ struct Args {
     std::vector<std::string> pos;
     std::string out, preview;
     int scale = 8;
+    int width = 600, height = 900;
+    double yaw = 22, pitch = 6, zoom = 1;
+    bool hq = false, transparent = false;
 };
 
 Args parse(int argc, char **argv, int from) {
@@ -62,6 +66,15 @@ Args parse(int argc, char **argv, int from) {
         };
         if (s == "-o" || s == "--out") a.out = need("-o");
         else if (s == "--preview") a.preview = need("--preview");
+        else if (s == "--size") {
+            std::string v = need("--size");
+            if (std::sscanf(v.c_str(), "%dx%d", &a.width, &a.height) != 2 || a.width < 16 || a.height < 16 || a.width > 8192 || a.height > 8192)
+                throw std::runtime_error("--size must look like 600x900");
+        } else if (s == "--yaw") a.yaw = std::stod(need("--yaw"));
+        else if (s == "--pitch") a.pitch = std::stod(need("--pitch"));
+        else if (s == "--zoom") a.zoom = std::stod(need("--zoom"));
+        else if (s == "--hq") a.hq = true;
+        else if (s == "--transparent") a.transparent = true;
         else if (s == "--scale") {
             a.scale = std::stoi(need("--scale"));
             if (a.scale < 1 || a.scale > 64) throw std::runtime_error("--scale must be 1..64");
@@ -135,6 +148,19 @@ int main(int argc, char **argv) {
         if (cmd == "pack-bedrock") {
             if (a.pos.size() != 1 || a.out.empty()) { usage(); return 2; }
             std::cout << dolly::build_bedrock_pack(a.pos[0], a.out);
+            return 0;
+        }
+        if (cmd == "sculpt") {
+            if (a.pos.size() != 1 || a.out.empty()) { usage(); return 2; }
+            char err[512];
+            df_doll *doll = df_doll_from_recipe(a.pos[0].c_str(), err, sizeof err);
+            if (!doll) throw std::runtime_error(err);
+            std::vector<uint8_t> px(static_cast<size_t>(a.width) * a.height * 4);
+            int flags = (a.hq ? DF_RENDER_HQ : 0) | (a.transparent ? 0 : DF_RENDER_BACKGROUND);
+            df_doll_render(doll, a.width, a.height, a.yaw, a.pitch, a.zoom, flags, px.data());
+            df_doll_free(doll);
+            dolly::write_bytes(a.out, dolly::encode_png(px.data(), a.width, a.height));
+            std::cout << a.pos[0] << " -> " << a.out << "\n";
             return 0;
         }
         if (cmd == "--version" || cmd == "version") { std::cout << "dolly-forge " << df_version() << "\n"; return 0; }

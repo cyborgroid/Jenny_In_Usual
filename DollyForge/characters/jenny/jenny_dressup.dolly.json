@@ -30,6 +30,11 @@
     "O": "boots", "o": "boot_sole", "A": "bag", "a": "bag_clasp",
     "E": "dress_light"
   },
+  "doll": {
+    "outfit": {
+      "type": "dressup"
+    }
+  },
   "ops": [
     { "op": "note", "text": "---- 몸통: 열린 크롭 재킷 + 니트 드레스 ----" },
     { "op": "fill", "part": "body", "faces": "all", "color": "dress" },

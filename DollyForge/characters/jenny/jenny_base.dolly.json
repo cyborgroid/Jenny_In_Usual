@@ -11,9 +11,9 @@
   },
   "model": "slim",
   "palette": {
-    "skin": "#F2C4B0",
+    "skin": "#F4CCC2",
     "skin_shade": "skin*0.9",
-    "blush": "#EC9CA2",
+    "blush": "#EE96A2",
     "mouth": "#C9767A",
     "brow": "hair*0.78",
     "lash": "#2B1B24",
@@ -33,6 +33,31 @@
     "s": "skin_shade", "P": "blush", "M": "mouth", "B": "brow",
     "K": "lash", "W": "eye_white", "E": "eye", "F": "eye_light",
     "p": "flower_petal", "q": "flower_dark", "c": "flower_center", "L": "hair_shine"
+  },
+  "doll": {
+    "// 곡선 3D": "체형·메이크업 기본값은 03_Sources/3D_Models 실측 그대로 (1 = 레퍼런스). 바꾸지 말고 옮긴다.",
+    "hair": {
+      "style": "long"
+    },
+    "flower": {
+      "side": "right"
+    },
+    "figure": {
+      "bust": 1,
+      "waist": 1,
+      "hips": 1,
+      "thighs": 1
+    },
+    "makeup": {
+      "eye_size": 1,
+      "eye_open": 0.66,
+      "eye_tilt": 0.35,
+      "lash": 1,
+      "brow_arch": 1,
+      "blush": 0.75,
+      "lip_curve": 1,
+      "gloss": 1
+    }
   },
   "ops": [
     { "op": "note", "text": "---- 머리: 긴 갈색 머리, 옆으로 넘긴 앞머리, 보라 꽃핀 ----" },

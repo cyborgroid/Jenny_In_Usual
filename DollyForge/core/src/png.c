@@ -46,32 +46,52 @@ static uint8_t *put_chunk(uint8_t *o, const char *type, const uint8_t *data, uin
     return o + 12 + len;
 }
 
+static int deflate_zlib(const uint8_t *raw, size_t n, uint8_t **out, size_t *outlen);
+
+/* 행마다 필터 5종 중 바이트 절대값 합이 가장 작은 것을 고른다 (libpng 의 기본 휴리스틱) */
+static void filter_row(const uint8_t *cur, const uint8_t *prev, size_t stride, uint8_t *dst) {
+    uint8_t *tmp = dst + 1;
+    long best_sum = -1;
+    uint8_t cand[5][4096 * 4];
+    int best = 0;
+    int big = stride > sizeof cand[0];
+    for (int f = 0; f < (big ? 1 : 5); f++) {
+        uint8_t *o = big ? tmp : cand[f];
+        long sum = 0;
+        for (size_t i = 0; i < stride; i++) {
+            int a = i >= 4 ? cur[i - 4] : 0, b = prev ? prev[i] : 0, c = prev && i >= 4 ? prev[i - 4] : 0;
+            int v;
+            switch (f) {
+            case 0: v = cur[i]; break;
+            case 1: v = cur[i] - a; break;
+            case 2: v = cur[i] - b; break;
+            case 3: v = cur[i] - ((a + b) >> 1); break;
+            default: {
+                int pp = a + b - c, pa = abs(pp - a), pb = abs(pp - b), pc = abs(pp - c);
+                v = cur[i] - (pa <= pb && pa <= pc ? a : pb <= pc ? b : c);
+            }
+            }
+            o[i] = (uint8_t)v;
+            sum += abs((int8_t)o[i]);
+        }
+        if (best_sum < 0 || sum < best_sum) { best_sum = sum; best = f; }
+    }
+    dst[0] = (uint8_t)best;
+    if (!big) memcpy(tmp, cand[best], stride);
+}
+
 int df_png_encode(const uint8_t *rgba, int w, int h, uint8_t **out, size_t *outlen) {
-    if (w <= 0 || h <= 0) return 0;
+    if (w <= 0 || h <= 0 || w > 4096) return 0;
     size_t stride = (size_t)w * 4, raw_len = (stride + 1) * (size_t)h;
     uint8_t *raw = malloc(raw_len);
     if (!raw) return 0;
-    for (int y = 0; y < h; y++) {
-        raw[y * (stride + 1)] = 0; /* filter: None */
-        memcpy(raw + y * (stride + 1) + 1, rgba + y * stride, stride);
-    }
-    size_t blocks = raw_len / 65535 + 1;
-    size_t z_len = 2 + raw_len + blocks * 5 + 4;
-    uint8_t *z = malloc(z_len), *zp = z;
-    if (!z) { free(raw); return 0; }
-    *zp++ = 0x78; *zp++ = 0x01;
-    for (size_t off = 0; off < raw_len || off == 0;) {
-        size_t n = raw_len - off > 65535 ? 65535 : raw_len - off;
-        *zp++ = off + n >= raw_len ? 1 : 0; /* BFINAL, BTYPE=00 */
-        *zp++ = (uint8_t)n; *zp++ = (uint8_t)(n >> 8);
-        *zp++ = (uint8_t)~n; *zp++ = (uint8_t)(~n >> 8);
-        memcpy(zp, raw + off, n);
-        zp += n; off += n;
-        if (n == 0) break;
-    }
-    be32(zp, adler32(raw, raw_len)); zp += 4;
-    z_len = (size_t)(zp - z);
+    for (int y = 0; y < h; y++)
+        filter_row(rgba + y * stride, y ? rgba + (y - 1) * stride : NULL, stride, raw + y * (stride + 1));
+    uint8_t *z;
+    size_t z_len;
+    int ok = deflate_zlib(raw, raw_len, &z, &z_len);
     free(raw);
+    if (!ok) return 0;
 
     size_t total = 8 + (12 + 13) + (12 + z_len) + 12;
     uint8_t *png = malloc(total), *o = png;
@@ -399,4 +419,97 @@ done:
     free(idat);
     free(s.out);
     return ok;
+}
+
+/* ---------------- deflate (LZ77 + 고정 허프만, RFC 1951 BTYPE=01) ---------------- */
+
+typedef struct { uint8_t *buf; size_t pos; uint32_t bits; int nbits; } bitwriter;
+
+static void putbits(bitwriter *w, uint32_t v, int n) {
+    w->bits |= v << w->nbits;
+    w->nbits += n;
+    while (w->nbits >= 8) { w->buf[w->pos++] = (uint8_t)w->bits; w->bits >>= 8; w->nbits -= 8; }
+}
+
+static void put_code(bitwriter *w, uint32_t code, int n) { /* 허프만 코드는 MSB 부터 */
+    uint32_t r = 0;
+    for (int i = 0; i < n; i++) { r = (r << 1) | (code & 1); code >>= 1; }
+    putbits(w, r, n);
+}
+
+static void put_symbol(bitwriter *w, int c) {
+    if (c < 144) put_code(w, 0x30u + (uint32_t)c, 8);
+    else if (c < 256) put_code(w, 0x190u + (uint32_t)(c - 144), 9);
+    else if (c < 280) put_code(w, (uint32_t)(c - 256), 7);
+    else put_code(w, 0xC0u + (uint32_t)(c - 280), 8);
+}
+
+static void put_match(bitwriter *w, int len, int dist) {
+    int i = 28;
+    while (lbase[i] > len) i--;
+    put_symbol(w, 257 + i);
+    if (lext[i]) putbits(w, (uint32_t)(len - lbase[i]), lext[i]);
+    int d = 29;
+    while (dbase[d] > dist) d--;
+    put_code(w, (uint32_t)d, 5);
+    if (dext[d]) putbits(w, (uint32_t)(dist - dbase[d]), dext[d]);
+}
+
+#define HASH_BITS 15
+#define WINDOW 32768
+
+static int deflate_zlib(const uint8_t *raw, size_t n, uint8_t **out, size_t *outlen) {
+    size_t cap = n + n / 8 + 64;
+    bitwriter w = { malloc(cap), 0, 0, 0 };
+    int32_t *head = malloc(sizeof(int32_t) << HASH_BITS), *prev = malloc(sizeof(int32_t) * WINDOW);
+    if (!w.buf || !head || !prev) { free(w.buf); free(head); free(prev); return 0; }
+    for (int i = 0; i < 1 << HASH_BITS; i++) head[i] = -1;
+    w.buf[w.pos++] = 0x78; w.buf[w.pos++] = 0x01;
+    putbits(&w, 1, 1);   /* BFINAL */
+    putbits(&w, 1, 2);   /* 고정 허프만 */
+#define HASH(p) ((((uint32_t)raw[p] << 10) ^ ((uint32_t)raw[(p) + 1] << 5) ^ raw[(p) + 2]) & ((1u << HASH_BITS) - 1))
+    size_t i = 0;
+    while (i < n) {
+        int best_len = 0, best_dist = 0;
+        if (i + 3 <= n) {
+            uint32_t hh = HASH(i);
+            int32_t cand = head[hh];
+            for (int tries = 0; cand >= 0 && tries < 64 && i - (size_t)cand <= WINDOW - 1; tries++) {
+                size_t maxlen = n - i < 258 ? n - i : 258;
+                if (raw[cand + best_len] == raw[i + best_len]) {
+                    size_t l = 0;
+                    while (l < maxlen && raw[cand + l] == raw[i + l]) l++;
+                    if ((int)l > best_len) { best_len = (int)l; best_dist = (int)(i - (size_t)cand); if (l == maxlen) break; }
+                }
+                int32_t nx = prev[cand & (WINDOW - 1)];
+                if (nx >= cand) break;
+                cand = nx;
+            }
+        }
+        size_t adv = best_len >= 3 ? (size_t)best_len : 1;
+        if (best_len >= 3) put_match(&w, best_len, best_dist);
+        else put_symbol(&w, raw[i]);
+        for (size_t k = 0; k < adv; k++, i++) {
+            if (i + 3 <= n) {
+                uint32_t hh = HASH(i);
+                prev[i & (WINDOW - 1)] = head[hh];
+                head[hh] = (int32_t)i;
+            }
+        }
+        if (w.pos + 64 > cap) { /* 압축이 안 되는 데이터: 버퍼를 키운다 */
+            uint8_t *nb = realloc(w.buf, cap * 2);
+            if (!nb) { free(w.buf); free(head); free(prev); return 0; }
+            w.buf = nb; cap *= 2;
+        }
+    }
+#undef HASH
+    put_symbol(&w, 256);
+    if (w.nbits) putbits(&w, 0, 8 - w.nbits);
+    be32(w.buf + w.pos, adler32(raw, n));
+    w.pos += 4;
+    free(head);
+    free(prev);
+    *out = w.buf;
+    *outlen = w.pos;
+    return 1;
 }

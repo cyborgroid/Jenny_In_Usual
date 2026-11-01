@@ -2,7 +2,9 @@
 
 본 프로젝트는 비공식 성인용 모드(Mod)로 인해 왜곡되고 대상화되었던 캐릭터를 본래의 평범하고 건강한 일상 속으로 되돌려놓고, 전 세계 마인크래프트 유저들이 떳떳하게 사용할 수 있는 양지의 정식 캐릭터 및 스킨으로 재창조(Recreation)하는 개발 프로젝트입니다.
 
-![Jenny In Usual 스킨 라인업](05_Distribution/previews/Lineup.png)
+![Jenny In Usual 곡선 3D](05_Distribution/previews/Lineup_3D.png)
+
+![Jenny In Usual 마인크래프트 스킨](05_Distribution/previews/Lineup.png)
 
 ---
 
@@ -54,7 +56,7 @@
   - `Install_Guide.md` : 마인크래프트 자바 에디션 / 베드락 에디션 적용 가이드
   - `bedrock/JennyInUsual.mcpack` : 베드락 에디션용 스킨팩 (스킨 8종, 영어·한국어 이름)
   - `integrity.json` : 공식 스킨의 SHA-256 서명 — 무단 변형본 판별용
-  - `previews/` : 3D 미리보기, 라인업, Dolly Forge Studio 화면
+  - `previews/` : 곡선 3D 렌더(`3D/`, `Lineup_3D.png`), 스킨 미리보기, 라인업, Dolly Forge Studio 화면
 - **라이선스 가이드 (CCL 조건 적용):** `LICENSE.md`
   - 본 프로젝트를 통해 재창조된 스킨 및 캐릭터 에셋은 **CC BY-NC-ND (저작자표시-비영리-변경금지)** 조건을 따릅니다.
   - **조건 1 (비영리):** 본 리소스를 활용하여 후원 플랫폼(Patreon 등)이나 커미션 등 어떠한 영리적 수익 활동도 할 수 없습니다.
@@ -62,12 +64,13 @@
 
 ### 🛠️ DollyForge (캐릭터 메이크업 & 개발 툴킷)
 - **핵심 작업:** 마인크래프트 캐릭터를 메이크업하고 개발하는 Project Haven 의 공식 제작 도구
+- **곡선 3D 메이크업 설계:** 3D_Models 레퍼런스의 체형을 실측해 매끈한 곡면으로 다시 세우고, 눈매·속눈썹·홍채·눈썹·홍조·입술·머릿결 윤기를 얼굴 위의 곡선으로 설계합니다. 같은 레시피가 곡선 3D 와 64×64 게임 스킨을 함께 만듭니다.
 - **구조:** C 코어(`libdollyforge`) 하나를 C++ · Java · Python · C# · Rust 도구가 함께 씁니다.
-  - **C** — 64×64 스킨 규격, PNG, 레시피 엔진, 검증 (모든 도구의 기반)
+  - **C** — 곡선 3D 엔진(SDF 곡면 + 곡선 메이크업 + 렌더), 64×64 스킨 규격, PNG, 레시피 엔진, 검증 (모든 도구의 기반)
   - **C++** — `dolly-forge` CLI, 베드락(C++ 엔진) `.mcpack` 패키저
   - **Java** — 자바 에디션 플레이어 모델 3D 미리보기
   - **Python** — 레퍼런스 팔레트 추출, 바인딩, 전체 빌드 파이프라인
-  - **C#** — **Dolly Forge Studio**: 피부·눈·머리·옷 색을 실시간으로 바꿔 보는 메이크업 GUI
+  - **C#** — **Dolly Forge Studio**: 곡선 3D 를 돌려 보며 메이크업 곡선과 색을 실시간으로 설계하는 GUI
   - **Rust** — `dolly-guard`: 공식 스킨 서명, 무단 변형 감지, 라이선스·연령 등급 검사
 - **빌드:** `python3 DollyForge/build.py` — 자세한 내용은 [`DollyForge/README.md`](DollyForge/README.md)
 

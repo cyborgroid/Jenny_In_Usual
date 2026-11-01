@@ -28,6 +28,11 @@
     "D": "gown", "d": "gown_shade", "Y": "lace", "y": "lace_dark",
     "V": "veil", "v": "veil_shade", "O": "boots", "o": "boot_sole"
   },
+  "doll": {
+    "outfit": {
+      "type": "wedding"
+    }
+  },
   "ops": [
     { "op": "note", "text": "---- 베일: 머리 뒤로 내려오는 베일 (꽃핀과 앞머리는 그대로) ----" },
     { "op": "pixels", "part": "head", "layer": "overlay", "face": "back", "rows": [

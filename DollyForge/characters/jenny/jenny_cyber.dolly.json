@@ -40,6 +40,11 @@
     "V": "boot_trim", "Z": "boot_sole", "U": "turtleneck_light", "n": "tights_sheen",
     "k": "tights_shadow"
   },
+  "doll": {
+    "outfit": {
+      "type": "cyber"
+    }
+  },
   "ops": [
     { "op": "note", "text": "---- 몸통: 터틀넥이 보이는 열린 코트, 은색 버클 벨트, 코트 스커트 ----" },
     { "op": "fill", "part": "body", "faces": "all", "color": "coat" },

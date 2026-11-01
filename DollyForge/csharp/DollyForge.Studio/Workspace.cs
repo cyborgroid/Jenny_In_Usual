@@ -104,7 +104,8 @@ internal static class Workspace
     }
 
     /// <summary>원본 레시피를 extends 하고 바뀐 팔레트만 덮어쓰는 "메이크업 변형" 레시피</summary>
-    public static JsonObject Variant(string recipePath, IReadOnlyDictionary<string, string> overrides, JsonObject? meta = null)
+    public static JsonObject Variant(string recipePath, IReadOnlyDictionary<string, string> overrides, JsonObject? meta = null,
+                                     IReadOnlyDictionary<string, double>? makeup = null)
     {
         var pal = new JsonObject();
         foreach (var (k, v) in overrides) pal[k] = v;
@@ -112,6 +113,21 @@ internal static class Workspace
         if (meta != null) o["meta"] = meta;
         o["extends"] = Path.GetFileName(recipePath);
         o["palette"] = pal;
+        if (makeup is { Count: > 0 })
+        {
+            var mk = new JsonObject();
+            foreach (var (k, v) in makeup) mk[k] = Math.Round(v, 3);
+            o["doll"] = new JsonObject { ["makeup"] = mk };
+        }
         return o;
+    }
+
+    /// <summary>메이크업 곡선 값: 체인 뒤쪽(자식)부터 찾고 없으면 엔진 기본값 (C 코어와 같은 규칙)</summary>
+    public static double MakeupValue(string recipePath, string key, double fallback)
+    {
+        var chain = Chain(recipePath);
+        for (var i = chain.Count - 1; i >= 0; i--)
+            if (chain[i]["doll"]?["makeup"]?[key] is JsonValue v && v.TryGetValue<double>(out var d)) return d;
+        return fallback;
     }
 }

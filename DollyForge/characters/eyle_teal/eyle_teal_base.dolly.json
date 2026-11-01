@@ -19,6 +19,14 @@
     "flower_petal": "#3F78DA",
     "flower_center": "#F0D04A"
   },
+  "doll": {
+    "hair": {
+      "style": "bob"
+    },
+    "flower": {
+      "side": "left"
+    }
+  },
   "ops": [
     { "op": "note", "text": "---- 꽃핀을 보는 사람 기준 오른쪽(캐릭터 왼쪽)으로 — 레퍼런스 위치 그대로 ----" },
     { "op": "pixels", "part": "head", "layer": "overlay", "face": "front", "rows": [

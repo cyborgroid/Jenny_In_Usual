@@ -38,9 +38,33 @@ internal static partial class Native
     [DllImport(Lib)] public static extern int df_skin_save_png(IntPtr skin, byte[] path, byte[] err, nuint errlen);
     [DllImport(Lib)] public static extern int df_validate(IntPtr skin, byte[] buf, nuint buflen);
     [DllImport(Lib)] public static extern void df_render_flat(IntPtr skin, int view, byte[] out16x32);
+    [DllImport(Lib)] public static extern IntPtr df_doll_from_json(byte[] json, nuint len, byte[] baseDir, byte[] err, nuint errlen);
+    [DllImport(Lib)] public static extern void df_doll_free(IntPtr doll);
+    [DllImport(Lib)] public static extern int df_doll_render(IntPtr doll, int w, int h, double yaw, double pitch, double zoom, int flags, byte[] rgba);
 
     public static byte[] Z(string s) => Encoding.UTF8.GetBytes(s + "\0");
     public static string FromZ(byte[] buf) => Encoding.UTF8.GetString(buf, 0, Math.Max(0, Array.IndexOf(buf, (byte)0)));
+}
+
+/// <summary>곡선 3D 캐릭터 — 레시피의 doll 섹션과 같은 팔레트로 렌더</summary>
+internal static class Doll
+{
+    public const int Background = 1, HighQuality = 2;
+
+    public static byte[] Render(string json, string baseDir, int w, int h, double yaw, double pitch, double zoom, int flags)
+    {
+        var data = Encoding.UTF8.GetBytes(json);
+        var err = new byte[512];
+        var d = Native.df_doll_from_json(data, (nuint)data.Length, Native.Z(baseDir), err, (nuint)err.Length);
+        if (d == IntPtr.Zero) throw new InvalidOperationException(Native.FromZ(err));
+        try
+        {
+            var px = new byte[w * h * 4];
+            Native.df_doll_render(d, w, h, yaw, pitch, zoom, flags, px);
+            return px;
+        }
+        finally { Native.df_doll_free(d); }
+    }
 }
 
 /// <summary>C 코어가 소유한 스킨 핸들</summary>

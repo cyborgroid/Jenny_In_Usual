@@ -5,3 +5,6 @@ DollyForge/csharp/*/bin/
 DollyForge/csharp/*/obj/
 __pycache__/
 *.pyc
+
+# VS Code C/C++ 인덱스 DB (1GB 이상, 커밋 금지)
+.vscode/browse.vc.db*

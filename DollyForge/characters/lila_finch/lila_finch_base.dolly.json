@@ -18,6 +18,14 @@
     "flower_petal": "#DE4A22",
     "flower_center": "#F2C844"
   },
+  "doll": {
+    "hair": {
+      "style": "wavy"
+    },
+    "flower": {
+      "side": "left"
+    }
+  },
   "ops": [
     { "op": "note", "text": "---- 꽃핀을 보는 사람 기준 오른쪽으로 — 레퍼런스 위치 그대로 ----" },
     { "op": "pixels", "part": "head", "layer": "overlay", "face": "front", "rows": [
